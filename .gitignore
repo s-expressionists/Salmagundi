@@ -9,6 +9,7 @@
 *.ilg
 *.ind
 *.log
+*.png
 *.pdf
 *.pdf_t
 *.toc
@@ -18,6 +19,8 @@
 *.out
 *.snm
 *.nav
+*.fn
+*.fns
+*.tp
+*.tps
 \#*\#
-Code/Boot/Host-FASLs
-dependencies
