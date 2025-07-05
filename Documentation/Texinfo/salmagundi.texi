@@ -1,0 +1,31 @@
+\input texinfo
+
+@settitle Salmagundi manual
+
+@titlepage
+@title Salmagundi manual
+@end titlepage
+
+@contents
+
+@include logos.texi
+
+@node Top
+@top @salmagundi{}
+
+This document describes @salmagundi{} which is a library that
+implements @commonlisp{} hash tables.
+
+@menu
+* Introduction:: Introduction
+* Index:: Complete index
+@end menu
+
+@include chap-introduction.texi
+
+@node Index
+@unnumbered Index
+
+@printindex cp
+
+@bye
