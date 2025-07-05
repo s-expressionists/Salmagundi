@@ -23,6 +23,7 @@ implements @commonlisp{} hash tables.
 @end menu
 
 @include chap-introduction.texi
+@include chap-protocol.texi
 
 @node Index
 @unnumbered Index

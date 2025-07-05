@@ -1,0 +1,67 @@
+@node Protocol
+@chapter Protocol
+
+Most of the standard functions on hash tables are implemented as
+generic functions:
+
+@defgena{hash-table-p,salmagundi} hash-table
+@end deffn
+
+@defgena{hash-table-count,salmagundi} hash-table
+@end deffn
+
+@defgena{hash-table-size,salmagundi} hash-table
+@end deffn
+
+@defgena{hash-table-rehash-size,salmagundi} hash-table
+@end deffn
+
+@defgena{hash-table-rehash-threshold,salmagundi} hash-table
+@end deffn
+
+@defgena{gethash,salmagundi} key hash-table @optional{} default
+@end deffn
+
+@defgena{(setf gethash),salmagundi} new-value key hash-table @optional{} default
+@end deffn
+
+@defgena{hash-table-test,salmagundi} hash-table
+@end deffn
+
+@defgena{remhash,salmagundi} {key hash-table}
+@end deffn
+
+@defgena{clrhash,salmagundi} hash-table
+@end deffn
+
+@defgena{maphash,salmagundi} hash-table
+@end deffn
+
+@noindent
+Some additional generic functions are provided, which should be implemented
+by a hash table implementation:
+
+@defgena{make-hash-table-iterator,salmagundi} hash-table
+
+Return a function which implements the iterator of
+@code{with-hash-table-iterator}.
+@end deffn
+
+@noindent
+Furthermore, some functions will be useful for implementing a hash
+table:
+
+@defgena{%hash-table-test,salmagundi} hash-table
+
+Return the test function used for comparing keys. This function is necessary
+because @code{hash-table-test} must return a symbol which designates a
+standardized test function, and not the function itself; however, an
+implementor of a hash table is likely to want to avoid accessing the global
+environment when probing keys.
+@end deffn
+
+@deffuna{find-hash-function,salmagundi} name
+
+Return a hash function for the standardized hash table test function
+designated by the symbol @code{name}, or signal an error.
+@end deffn
