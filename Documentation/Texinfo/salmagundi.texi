@@ -21,6 +21,7 @@ implements @commonlisp{} hash tables.
 * Index:: Complete index
 @end menu
 
+@include specmacros.texi
 @include chap-introduction.texi
 
 @node Index
