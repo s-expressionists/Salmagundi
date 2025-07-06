@@ -27,3 +27,22 @@ the method returns two values, the @code{cdr} of that entry and
 @code{t}.  Otherwise, the method return @code{nil} and
 @code{nil}.
 @end deffn
+
+@section Implementation as a vector of buckets
+
+@defclassa {bucket-hash-table,salmagundi}
+
+This class is a subclass of @code{hash-table}.  The implementation
+uses a vector of buckets.
+@end deftp
+
+@section Implementation using linear probing
+
+@defclassa {linear-probing-hash-table,salmagundi}
+
+This class is a subclass of @code{hash-table}.  The implementation
+uses linear probing, based on the cache-aware hash table designed by
+Matt Kulukundis and described in a CppCon talk entitled
+``Designing a Fast, Efficient, Cache-friendly Hash Table, Step by Step''
+@url{https://www.youtube.com/watch?v=ncHmEUmJZf4}.
+@end deftp
