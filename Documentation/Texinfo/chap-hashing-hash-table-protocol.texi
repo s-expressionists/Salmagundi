@@ -1,0 +1,21 @@
+@node Hashing hash table protocol
+@chapter Hashing hash table protocol
+
+@defgena{hash-table-hash-function,salmagundi} hash-table
+
+This function returns the values supplied with the initarg
+@code{:hash-function}, or the default value if the initarg was not
+supplied.
+@end deffn
+
+@defgena{hash-table-offset,salmagundi} hash-table
+
+This function returns the values supplied with the initarg
+@code{:hash-offset}, of the default value if the initarg was not
+supplied.
+@end deffn
+
+@defgena{hash,salmagundi} hash-table key
+
+Return the hash of the provided key, specific to the provided hash table.
+@end deffn

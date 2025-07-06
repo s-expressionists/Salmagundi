@@ -25,6 +25,7 @@ implements @commonlisp{} hash tables.
 @include chap-introduction.texi
 @include chap-protocol.texi
 @include chap-base-classes.texi
+@include chap-hashing-hash-table-protocol.texi
 
 @node Index
 @unnumbered Index
