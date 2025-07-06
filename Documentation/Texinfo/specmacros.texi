@@ -46,6 +46,11 @@
 @deffn {Generic Function} {@symbol{\NAME\,\PACKAGE\}}
 @end macro
 
+@macro defmethoda{NAME,PACKAGE}
+@anchor{Method \PACKAGE\|\NAME\}
+@deffn {Method} {@symbol{\NAME\,\PACKAGE\}}
+@end macro
+
 @macro defmaca{NAME,PACKAGE}
 @anchor{Macro \PACKAGE\|\NAME\}
 @deffn {Macro} {@symbol{\NAME\,\PACKAGE\}}
