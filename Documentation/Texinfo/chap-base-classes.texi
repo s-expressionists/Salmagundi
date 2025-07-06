@@ -1,0 +1,40 @@
+@node Base classes
+@chapter Base classes
+
+@defclassa{hash-table,salmagundi}
+
+This class is the base class of all hash tables.  It is a subclass of
+the class @code{standard-object}.
+@end deftp
+
+@defclassa{hashing-hash-table,salmagundi}
+
+This class provides accessors common for all hash tables which hash
+the keys used.  It is a subclass of the class @code{hash-table}.
+@end deftp
+
+@deftp {Initarg} :hash-function
+
+This initarg is used to supply the hash function for a hashing hash table.
+The hash function takes two arguments, a non-negative fixnum
+@emph{offset value} and a key object to hash.  It returns a
+non-negative fixnum which is the hash value.
+
+If this initarg is not supplied, it defaults to @code{(find-hash-function (hash-table-test hash-table))}.
+
+@end deftp
+
+@deftp {Initarg} :hash-offset
+
+This initarg is used to supply the random offset for hashing with this
+hashing hash table.  A random offset is used to avoid an
+@emph{algorithmic complexity attack}, where an adversary could
+(indirectly) insert keys that they know will all collide in the hash
+table, greatly slowing down an application.  It is expected that this
+offset will be used to perturb the hashes generated, perhaps by being
+used as the initial state of a hashing algorithm.
+
+As such, this offset must not be exposed to an untrusted user; but the
+offset can be fixed and read for debugging purposes.
+
+@end deftp
