@@ -1,0 +1,29 @@
+@node Implementation
+@chapter Implementation
+
+@section Implementation as a list of entries
+
+@defclassa{list-hash-table,salmagundi}
+
+This class is a subclass of the class @code{hash-table}.
+It provides and implementation of the protocol where the entries are
+stored as an association list where the key is the @code{car} of the
+element in the list and the value is the @code{cdr} of the element
+in the list.
+@end deftp
+
+@defmethoda{gethash,salmagundi} key (hash-table @code{list-hash-table}) @optional{} default
+
+This method calls the generic function @code{contents} with
+@emph{hash-table} as an argument to obtain a list of entries of
+@code{hash-table}.  It also calls the generic function
+@code{hash-table-test} with @emph{hash-table} as an argument to
+obtain a function to be used to compare the keys of the entries to
+@code{key}.  It then calls the standard @commonlisp{} function
+@code{assoc}, passing it @emph{key}, the list of entries, and the
+test function as the value of the keyword argument @code{:test}.  If
+the call returns a non-@code{nil} value (i.e. a valid entry), then
+the method returns two values, the @code{cdr} of that entry and
+@code{t}.  Otherwise, the method return @code{nil} and
+@code{nil}.
+@end deffn
