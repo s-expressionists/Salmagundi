@@ -1,2 +1,19 @@
 @node Introduction
 @chapter Introduction
+
+This library was written by Hayley Patton.  It supplies code to
+implement functionality specified in the chapter ``Hash tables'' of
+the @commonlisp{} standard.
+
+@noindent
+Three implementations are provided:
+
+@itemize @bullet{}
+@item
+an implementation that does not use hashing at all, and instead stores
+key-value pairs in an association list,
+@item
+an implementation that uses a vector of buckets, and
+@item
+an implementation that uses linear probing.
+@end itemize
