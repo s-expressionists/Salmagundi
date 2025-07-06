@@ -37,4 +37,7 @@ used as the initial state of a hashing algorithm.
 As such, this offset must not be exposed to an untrusted user; but the
 offset can be fixed and read for debugging purposes.
 
+If this initarg is not supplied, it defaults to @code{(random (expt 2
+62))}.
+
 @end deftp
