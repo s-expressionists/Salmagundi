@@ -1,4 +1,4 @@
-(cl:in-package #:salmagundi-linear-probing)
+(cl:in-package #:salmagundi/linear-probing)
 
 (defconstant +metadata-entries-per-group+ 8
   "The number of metadata entries we store per group. We read and write

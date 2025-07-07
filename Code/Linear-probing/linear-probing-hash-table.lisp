@@ -1,4 +1,24 @@
-(cl:in-package #:salmagundi-linear)
+(cl:in-package #:salmagundi/linear-probing)
+
+(defclass linear-probing-client () ())
+
+(defclass linear-probing-hash-table (hashing-hash-table)
+  ((size :accessor %hash-table-size
+         :reader salmagundi:hash-table-size
+         :initarg :size
+         :initform 64)
+   (metadata :accessor hash-table-metadata)
+   (data     :accessor hash-table-data)
+   (tombstone-count :accessor hash-table-tombstone-count
+                    :initform 0)
+   (count :accessor %hash-table-count
+          :reader salmagundi:hash-table-count
+          :initform 0)))
+
+(defmethod salmagundi:make-hash-table ((client linear-probing-client) &rest initargs
+                                       &key test size rehash-size rehash-threshold)
+  (declare (ignore test size rehash-size rehash-threshold))
+  (apply #'make-instance 'linear-probing-hash-table initargs))
 
 (deftype data-vector ()
   `(simple-array t 1))
@@ -17,6 +37,7 @@
   (define-data-accessor value 2))
 
 (defconstant +empty+ '+empty+)
+
 (defun make-data-vector (size)
   "Create a data vector for a hash table of a given size."
   (let ((data (make-array (* size 3) :initial-element +empty+)))
@@ -35,6 +56,7 @@
           (hash-table-metadata table) (make-metadata-vector size))))
 
 (declaim (inline split-hash cheap-mod))
+
 (defun split-hash (hash)
   (declare ((unsigned-byte 64) hash))
   (floor hash 256))
@@ -44,6 +66,7 @@
   (logand number (1- divisor)))
 
 (declaim (inline call-with-key-index))
+
 (defun call-with-key-index (key hash-table metadata data size continuation)
   "Call CONTINUATION with each matching group, group position, offset in the group and actual position.
 Compare this to WITH-ENTRY in the bucket hash table."
@@ -56,7 +79,7 @@ Compare this to WITH-ENTRY in the bucket hash table."
       (split-hash (salmagundi:hash hash-table key))
     (let* ((groups      (floor size +metadata-entries-per-group+))
            (probe-position (cheap-mod h1 groups))
-           (test        (%hash-table-test hash-table)))
+           (test        (salmagundi:%hash-table-test hash-table)))
       (declare (metadata-vector metadata)
                (simple-vector   data)
                (function        test)
@@ -99,17 +122,17 @@ Compare this to WITH-ENTRY in the bucket hash table."
        (call-with-key-index ,key ,hash-table ,metadata ,data ,size
                             #',continuation))))
 
-(defmethod gethash (key (hash-table linear-probing-hash-table) &optional default)
+(defmethod salmagundi:gethash (key (hash-table linear-probing-hash-table) &optional default)
   (declare (optimize (speed 3)))
   (let* ((metadata (hash-table-metadata hash-table))
          (data     (hash-table-data hash-table))
          (size     (hash-table-size hash-table)))
     (with-key-index (key hash-table metadata data size)
       (:position position)
-      (return-from gethash (values (value data position) t)))
+      (return-from salmagundi:gethash (values (value data position) t)))
     (values default nil)))
 
-(defmethod remhash (key (hash-table linear-probing-hash-table))
+(defmethod salmagundi:remhash (key (hash-table linear-probing-hash-table))
   (declare (optimize (speed 3)))
   (let* ((metadata (hash-table-metadata hash-table))
          (data     (hash-table-data hash-table))
@@ -128,7 +151,7 @@ Compare this to WITH-ENTRY in the bucket hash table."
       (setf (key data position)   +empty+
             (value data position) +empty+)
       (decf (%hash-table-count hash-table))
-      (return-from remhash t))
+      (return-from salmagundi:remhash t))
     nil))
 
 (defun add-mapping (metadata data size test going-to-overwrite?
@@ -166,7 +189,7 @@ Compare this to WITH-ENTRY in the bucket hash table."
                         (= +empty-metadata+ old-metadata)))))
           (setf probe-position (cheap-mod (1+ probe-position) groups)))))))
 
-(defmethod (setf gethash) (new-value key hash-table &optional default)
+(defmethod (setf salmagundi:gethash) (new-value key hash-table &optional default)
   (declare (ignore default))
   (let ((size (hash-table-size hash-table)))
     (multiple-value-bind (previously-key? previously-empty?)
@@ -229,9 +252,9 @@ Compare this to WITH-ENTRY in the bucket hash table."
                      nil
                      key value hash)))))
 
-(defmethod maphash (function (hash-table linear-probing-hash-table))
+(defmethod salmagundi:maphash (function (hash-table linear-probing-hash-table))
   (let ((data (hash-table-data hash-table)))
-    (dotimes (n (hash-table-size hash-table))
+    (dotimes (n (salmagundi:hash-table-size hash-table))
       (let ((key   (key data n))
             (value (value data n)))
         (unless (or (eql key +empty+)
@@ -239,18 +262,18 @@ Compare this to WITH-ENTRY in the bucket hash table."
           (funcall function key value)))))
   nil)
 
-(defmethod clrhash ((hash-table linear-probing-hash-table))
-  (let ((size (hash-table-size hash-table)))
+(defmethod salmagundi:clrhash ((hash-table linear-probing-hash-table))
+  (let ((size (salmagundi:hash-table-size hash-table)))
     (setf (hash-table-metadata hash-table) (make-metadata-vector size)
           (hash-table-data hash-table)     (make-data-vector size)
           (%hash-table-count hash-table) 0
           (hash-table-tombstone-count hash-table) 0))
   hash-table)
 
-(defmethod make-hash-table-iterator ((hash-table linear-probing-hash-table))
+(defmethod salmagundi:make-hash-table-iterator ((hash-table linear-probing-hash-table))
   (let ((position 0)
         (data (hash-table-data hash-table))
-        (size (hash-table-size hash-table)))
+        (size (salmagundi:hash-table-size hash-table)))
     (lambda ()
       (if (= position size)
           (values nil)
