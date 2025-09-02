@@ -3,7 +3,7 @@
                "salmagundi/bucket"
                "trivial-package-locks")
   :components ((:module code
-                :pathname "Code/Intrinsic/"
+                :pathname "code/intrinsic/"
                 :serial t
                 :components ((:file "packages")
                              (:file "interface")))))

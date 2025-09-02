@@ -1,6 +1,7 @@
 (cl:in-package #:asdf-user)
 
 (defsystem "salmagundi"
+  :depends-on ("trinsic")
   :serial t
   :components ((:module "code"
                 :pathname "code/"

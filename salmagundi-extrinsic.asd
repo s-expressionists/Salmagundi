@@ -3,7 +3,7 @@
                "salmagundi/bucket"
                "salmagundi/list")
   :components ((:module code
-                :pathname "Code/Extrinsic/"
+                :pathname "code/extrinsic/"
                 :serial t
                 :components ((:file "packages")
                              (:file "interface")))))
