@@ -49,11 +49,11 @@
                          (+ size rehash-size)
                          (round (* size rehash-size))))
            (new-data (make-array new-size :initial-element '())))
-      (maphash (lambda (key value)
-                 (let* ((key-hash (funcall hash-function key))
-                        (index (mod key-hash new-size)))
-                   (push (cons key value) (aref new-data index))))
-               hash-table)
+      (salmagundi:maphash (lambda (key value)
+                            (let* ((key-hash (funcall hash-function key))
+                                   (index (mod key-hash new-size)))
+                              (push (cons key value) (aref new-data index))))
+                          hash-table)
       (setf (hash-table-data hash-table) new-data
             (%bucket-hash-table-size hash-table) new-size))))
 

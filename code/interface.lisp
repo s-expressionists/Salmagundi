@@ -18,6 +18,7 @@
                            hash-table-rehash-threshold
                            hash-table-size
                            hash-table-test
+                           maphash
                            remhash)
                          ,intrinsic-pkg)
 
@@ -30,6 +31,7 @@
                  hash-table-rehash-threshold
                  hash-table-size
                  hash-table-test
+                 maphash
                  remhash)
                ,intrinsic-pkg)
 

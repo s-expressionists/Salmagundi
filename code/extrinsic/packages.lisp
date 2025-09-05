@@ -11,6 +11,7 @@
            #:hash-table-size
            #:hash-table-test
            #:make-hash-table
+           #:maphash
            #:remhash
            #:with-hash-table-iterator)
   (:export #:*client*
@@ -25,5 +26,6 @@
            #:hash-table-size
            #:hash-table-test
            #:make-hash-table
+           #:maphash
            #:remhash
            #:with-hash-table-iterator))

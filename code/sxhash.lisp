@@ -126,4 +126,4 @@
   (declare (ignore hash-function))
   (if hash-function-p
       (call-next-method)
-      (apply #'call-next-method client :hash-function (default-hash-function client test) initargs)))
+      (apply #'call-next-method client :hash-function (default-hash-function client (normalize-test-function client test)) initargs)))

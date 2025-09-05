@@ -73,6 +73,14 @@
 
 (defgeneric default-hash-function (client name))
 
+(defgeneric normalize-test-function (client function)
+  (:method (client function)
+    (declare (ignore client))
+    (let ((test-pair (rassoc function *standard-tests*)))
+          (if (null test-pair)
+              function
+              (car test-pair)))))
+
 ;;; Internal
 (defgeneric make-hash-table-iterator (hash-table)
   (:method (hash-table)
