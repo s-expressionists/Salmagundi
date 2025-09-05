@@ -1,6 +1,6 @@
 (cl:in-package #:salmagundi-extrinsic)
 
-(defclass extrinsic-client ()
+(defclass extrinsic-client (salmagundi:standard-client)
   ())
 
 (defclass extrinsic-client-impl (extrinsic-client salmagundi/bucket:bucket-client)

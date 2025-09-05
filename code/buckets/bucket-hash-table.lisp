@@ -1,8 +1,8 @@
 (cl:in-package #:salmagundi/bucket)
 
-(defclass bucket-client () ())
+(defclass bucket-client (salmagundi:standard-client) ())
 
-(defclass bucket-hash-table (salmagundi:hashing-hash-table)
+(defclass bucket-hash-table (salmagundi:hash-table)
   ((size :accessor %bucket-hash-table-size
          :reader salmagundi:hash-table-size
          :initarg :size
@@ -43,15 +43,14 @@
 (defun grow-and-rehash (hash-table)
   (with-accessors ((rehash-size salmagundi:hash-table-rehash-size)
                    (size salmagundi:hash-table-size)
-                   (hash-function salmagundi:hash-table-hash-function)
-                   (offset salmagundi:hash-table-offset))
+                   (hash-function salmagundi:hash-table-hash-function))
       hash-table
     (let* ((new-size (if (integerp rehash-size)
                          (+ size rehash-size)
                          (round (* size rehash-size))))
            (new-data (make-array new-size :initial-element '())))
       (maphash (lambda (key value)
-                 (let* ((key-hash (funcall hash-function offset key))
+                 (let* ((key-hash (funcall hash-function key))
                         (index (mod key-hash new-size)))
                    (push (cons key value) (aref new-data index))))
                hash-table)
@@ -67,7 +66,6 @@
 (defmacro with-entry ((entries-index entries entry key hash-table) &body body)
   (let ((key-hash (gensym)))
     `(let* ((,key-hash (funcall (salmagundi:hash-table-hash-function ,hash-table)
-                                (salmagundi:hash-table-offset ,hash-table)
                                 ,key))
             (,entries-index (mod ,key-hash (salmagundi:hash-table-size ,hash-table)))
             (,entries (aref (hash-table-data ,hash-table) index))

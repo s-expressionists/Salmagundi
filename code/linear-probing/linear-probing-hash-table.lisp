@@ -1,8 +1,8 @@
 (cl:in-package #:salmagundi/linear-probing)
 
-(defclass linear-probing-client () ())
+(defclass linear-probing-client (salmagundi:standard-client) ())
 
-(defclass linear-probing-hash-table (hashing-hash-table)
+(defclass linear-probing-hash-table (salmagundi:hash-table)
   ((size :accessor %hash-table-size
          :reader salmagundi:hash-table-size
          :initarg :size
@@ -51,7 +51,7 @@
        (expt 2 (integer-length (1- size)))))
 
 (defmethod initialize-instance :after ((table linear-probing-hash-table) &key)
-  (let ((size (nearest-allowed-size (hash-table-size table))))
+  (let ((size (nearest-allowed-size (%hash-table-size table))))
     (setf (hash-table-data table) (make-data-vector size)
           (hash-table-metadata table) (make-metadata-vector size))))
 
@@ -79,10 +79,10 @@ Compare this to WITH-ENTRY in the bucket hash table."
       (split-hash (salmagundi:hash hash-table key))
     (let* ((groups      (floor size +metadata-entries-per-group+))
            (probe-position (cheap-mod h1 groups))
-           (test        (salmagundi:%hash-table-test hash-table)))
+           (test        (salmagundi:hash-table-test hash-table)))
       (declare (metadata-vector metadata)
                (simple-vector   data)
-               (function        test)
+               ((or function symbol)        test)
                (fixnum          size)
                (group-index probe-position))
       (loop
@@ -126,7 +126,7 @@ Compare this to WITH-ENTRY in the bucket hash table."
   (declare (optimize (speed 3)))
   (let* ((metadata (hash-table-metadata hash-table))
          (data     (hash-table-data hash-table))
-         (size     (hash-table-size hash-table)))
+         (size     (%hash-table-size hash-table)))
     (with-key-index (key hash-table metadata data size)
       (:position position)
       (return-from salmagundi:gethash (values (value data position) t)))
@@ -136,7 +136,7 @@ Compare this to WITH-ENTRY in the bucket hash table."
   (declare (optimize (speed 3)))
   (let* ((metadata (hash-table-metadata hash-table))
          (data     (hash-table-data hash-table))
-         (size     (hash-table-size hash-table)))
+         (size     (%hash-table-size hash-table)))
     (with-key-index (key hash-table metadata data size)
         (:probe-group probe-group :position position)
       (cond
@@ -158,7 +158,7 @@ Compare this to WITH-ENTRY in the bucket hash table."
                     key new-value hash)
   (declare (metadata-vector metadata)
            (simple-vector   data)
-           (function        test)
+           ((or function symbol)       test)
            (fixnum          size))
   (multiple-value-bind (h1 h2) (split-hash hash)
     (let* ((groups      (floor size +metadata-entries-per-group+))
@@ -191,12 +191,12 @@ Compare this to WITH-ENTRY in the bucket hash table."
 
 (defmethod (setf salmagundi:gethash) (new-value key hash-table &optional default)
   (declare (ignore default))
-  (let ((size (hash-table-size hash-table)))
+  (let ((size (%hash-table-size hash-table)))
     (multiple-value-bind (previously-key? previously-empty?)
         (add-mapping (hash-table-metadata hash-table)
                      (hash-table-data hash-table)
                      size
-                     (%hash-table-test hash-table)
+                     (salmagundi:hash-table-test hash-table)
                      t
                      key new-value
                      (salmagundi:hash hash-table key))
@@ -214,11 +214,11 @@ Compare this to WITH-ENTRY in the bucket hash table."
   ;; We resize (or compact) when size - 1 = count-with-tombstones, i.e.
   ;; there are no empty mappings now.
   (when (or (> count-with-tombstones
-               (* size (hash-table-rehash-threshold hash-table)))
+               (* size (salmagundi:hash-table-rehash-threshold hash-table)))
             (= (1- size) count-with-tombstones))
     (let* (;; If the actual entry count is greater than REHASH-THRESHOLD, then
            ;; grow, else just copy to remove tombstones.
-           (new-size (if (< (* size (hash-table-rehash-threshold hash-table))
+           (new-size (if (< (* size (salmagundi:hash-table-rehash-threshold hash-table))
                             count)
                          (* size 2)
                          size))

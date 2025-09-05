@@ -9,7 +9,9 @@
                  :reader hash-table-rehash-size)
    (%rehash-threshold :initarg :rehash-threshold
                       :initform 0.8
-                      :reader hash-table-rehash-threshold)))
+                      :reader hash-table-rehash-threshold)
+   (%hash-function :reader hash-table-hash-function
+                   :initarg :hash-function)))
 
 (defmethod initialize-instance :after ((hash-table hash-table) &key test &allow-other-keys)
   (assert (> (hash-table-rehash-size hash-table) 1)

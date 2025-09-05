@@ -1,5 +1,7 @@
 (cl:in-package #:salmagundi)
 
+(defclass standard-client () ())
+
 (defgeneric hash-table-count (hash-table)
   (:method (hash-table)
     (error 'type-error :datum hash-table :expected-type 'hash-table)))
@@ -68,6 +70,8 @@
     nil))
 
 (defgeneric make-hash-table (client &key))
+
+(defgeneric default-hash-function (client name))
 
 ;;; Internal
 (defgeneric make-hash-table-iterator (hash-table)

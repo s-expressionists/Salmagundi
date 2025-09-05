@@ -1,6 +1,6 @@
 (cl:in-package #:salmagundi/list)
 
-(defclass list-client () ())
+(defclass list-client (salmagundi:standard-client) ())
 
 (defclass list-hash-table (salmagundi:hash-table)
   ((%size :accessor size

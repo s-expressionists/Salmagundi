@@ -8,5 +8,4 @@
 
 (defvar *client* (make-instance 'intrinsic-client-impl))
 
-(trivial-package-locks:with-unlocked-system-packages
-  (salmagundi:define-interface *client* intrinsic-client t))
+(salmagundi:define-interface :client-form *client* :client-class intrinsic-client :intrinsic t)

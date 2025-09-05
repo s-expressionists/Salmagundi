@@ -10,7 +10,6 @@
                              (:file "generic-functions")
                              (:file "hash-table")
                              (:file "sxhash")
-                             (:file "hashing-hash-table")
                              (:file "interface")))))
 
 (defsystem "salmagundi/bucket"

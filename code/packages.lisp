@@ -18,11 +18,12 @@
            #:remhash)
   (:export #:%hash-table-test
            #:clrhash
+           #:default-hash-function
            #:define-interface
+           #:define-hash-table-test
            #:eq-hash
            #:equal-hash
            #:equalp-hash
-           #:find-hash-function
            #:gethash
            #:hash
            #:hash-table
@@ -34,8 +35,8 @@
            #:hash-table-rehash-threshold
            #:hash-table-size
            #:hash-table-test
-           #:hashing-hash-table
            #:make-hash-table
            #:make-hash-table-iterator
            #:maphash
-           #:remhash))
+           #:remhash
+           #:standard-client))
