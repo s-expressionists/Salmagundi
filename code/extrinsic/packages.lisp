@@ -13,9 +13,15 @@
            #:make-hash-table
            #:maphash
            #:remhash
+           #:sxhash
            #:with-hash-table-iterator)
   (:export #:*client*
            #:clrhash
+           #:define-hash-table-test
+           #:eq-hash
+           #:eql-hash
+           #:equal-hash
+           #:equalp-hash
            #:extrinsic-client
            #:gethash
            #:hash-table
@@ -28,4 +34,5 @@
            #:make-hash-table
            #:maphash
            #:remhash
+           #:sxhash
            #:with-hash-table-iterator))

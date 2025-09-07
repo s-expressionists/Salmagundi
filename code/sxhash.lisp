@@ -1,129 +1,95 @@
 (cl:in-package #:salmagundi)
 
-(defconstant +fnv-prime+ 1099511628211)
+(defconstant +character-seed+ 2)
+(defconstant +integer-seed+ 3)
+(defconstant +float-seed+ 3)
+(defconstant +ratio-seed+ 4)
+(defconstant +complex-seed+ 5)
+(defconstant +cons-seed+ 5)
 
-(defparameter *hash-offset* (random (expt 2 62)))
+(defmethod eq-hash ((client standard-client) value &optional hash)
+  (hash client
+        #+abcl (system:identity-hash-code value)
+        #+allegro (excl:lispval-to-address value)
+        #+ccl (ccl:%address-of value)
+        #+cmucl (lisp::get-lisp-obj-address value)
+        #+ecl (si:pointer value)
+        #+sbcl (sb-kernel:get-lisp-obj-address value)
+        hash))
 
-(declaim (inline %fnv-1a fnv-1a))
+(defmethod eql-hash ((client standard-client) value &optional hash)
+  (eq-hash client value hash))
 
-(defun %fnv-1a (last-hash byte)
-  (declare ((unsigned-byte 8) byte)
-           ((unsigned-byte 62) last-hash))
-  (ldb (byte 62 0)
-       (logxor (* last-hash +fnv-prime+)
-               byte)))
+(defmethod eql-hash ((client standard-client) (value character) &optional hash)
+  (hash client (char-code value) (hash client +character-seed+ hash)))
 
-(defun fnv-1a (last-hash &rest bytes)
-  (declare ((unsigned-byte 62) last-hash))
-  (reduce #'%fnv-1a bytes :initial-value last-hash))
+(defmethod eql-hash ((client standard-client) (value integer) &optional hash)
+  (hash client value (hash client +integer-seed+ hash)))
 
-(define-compiler-macro fnv-1a (last-hash &rest bytes)
-  (reduce (lambda (last-form argument)
-            `(%fnv-1a ,last-form ,argument))
-          bytes
-          :initial-value last-hash))
-
-(defun eq-hash (object &optional (last-hash *hash-offset*))
-  (typecase object
-    ;; Instances of a built-in-class can't change-class, so we can
-    ;; gather some entropy from their classes at the very least.
-    (cons
-     (fnv-1a last-hash 1))
-    (character
-     (let ((code (char-code object)))
-       (fnv-1a last-hash
-               2
-               (ldb (byte 8 0) code)
-               (ldb (byte 8 8) code))))
-    (integer
-     (fnv-1a last-hash
-             3
-             (ldb (byte 8 0) object)
-             (ldb (byte 8 8) object)
-             (ldb (byte 8 16) object)
-             (ldb (byte 8 24) object)))
-    (float
-     (multiple-value-bind (significand exponent)
-         (integer-decode-float object)
-       (fnv-1a last-hash
-               4
-               (ldb (byte 8 0) significand)
-               (ldb (byte 8 8) significand)
-               (ldb (byte 8 16) significand)
-               (ldb (byte 8 0) exponent))))
-    ;; The element-type of an array won't change.
-    (array
-     (fnv-1a (equal-hash (array-element-type object) last-hash)
-             2))
-    (symbol
-     (equal-hash (symbol-name object) last-hash))
-    (t
-     last-hash)))
+(defmethod eql-hash ((client standard-client) (value float) &optional hash)
+  (setf hash (hash client +float-seed+ hash))
+  (multiple-value-bind (significand exponent sign)
+      (quaviver:float-triple client 2 value)
+    (if (symbolp exponent)
+        ; The payload of NaN is ignored in comparisons and infinity doesn't have a payload.
+        (hash client sign (eq-hash client exponent hash))
+        (hash client sign (hash client exponent (hash client significand hash))))))
 
 (defvar *depth* 3)
 
-(defun equal-hash (object &optional (last-hash *hash-offset*))
-  (when (zerop *depth*)
-    (return-from equal-hash last-hash))
-  (typecase object
-    (cons
-     (let ((*depth* (1- *depth*)))
-       (equal-hash (cdr object) (equal-hash (car object) last-hash))))
-    (symbol
-     (equal-hash (symbol-name object) (fnv-1a last-hash 1)))
-    (string
-     (loop for char across object
-           for position below 16
-           for hash = last-hash then (equal-hash char hash)
-           finally (return hash)))
-    (t
-     (eq-hash object last-hash))))
+(defmethod eql-hash ((client standard-client) (value ratio) &optional hash)
+  (hash client (denominator value) (hash client (numerator value) (hash client +ratio-seed+ hash))))
 
-(defun equalp-hash (object &optional (last-hash *hash-offset*))
-  (when (zerop *depth*)
-    (return-from equalp-hash last-hash))
-  (typecase object
-    (cons
-     (let ((*depth* (1- *depth*)))
-       (equalp-hash (cdr object) (equalp-hash (car object) last-hash))))
-    (symbol
-     (equal-hash (symbol-name object) (fnv-1a last-hash 1)))
-    (character
-     (eq-hash (char-downcase object) last-hash))
-    (string
-     (loop for char across object
-           for position below 16
-           for hash = last-hash then (equalp-hash char hash)
-           finally (return hash)))
-    (array
-     (loop with size = (array-total-size object)
-           for position below size
-           for hash = last-hash
-             then (equalp-hash (row-major-aref object position) hash)
-           finally (return hash)))
-    (t (eq-hash object last-hash))))
+(defmethod eql-hash ((client standard-client) (value complex) &optional hash)
+  (hash client (imagpart value) (hash client (realpart value) (hash client +complex-seed+ hash))))
 
-(defvar *sxhash-offset* 14695981039346656037)
+(defmethod equal-hash :around ((client standard-client) value &optional hash)
+  (let ((*depth* (1- *depth*)))
+    (if (zerop *depth*)
+        hash
+        (call-next-method))))
 
-#+(or)
-(defun sxhash (object)
-  (ldb (byte 62 0)
-       (equal-hash *sxhash-offset* object)))
+(defmethod equal-hash ((client standard-client) value &optional hash)
+  (eql-hash client value hash))
 
-(defmethod default-hash-function ((client standard-client) (name (eql 'eq)))
-  'eq-hash)
+(defmethod equal-hash ((client standard-client) (value cons) &optional hash)
+  (equal-hash client (cdr value) (equal-hash client (car value) (hash client +complex-seed+ hash))))
 
-(defmethod default-hash-function ((client standard-client) (name (eql 'eql)))
-  'eq-hash)
+(defmethod equal-hash ((client standard-client) (value string) &optional hash)
+  (loop for ch across value
+        repeat 16
+        do (setf hash (eql-hash client ch hash)))
+  hash)
 
-(defmethod default-hash-function ((client standard-client) (name (eql 'equal)))
-  'equal-hash)
+(defmethod equal-hash ((client standard-client) (value bit-vector) &optional hash)
+  (loop with integer = 0
+        for bit across value
+        for index below (integer-length most-positive-fixnum)
+        finally (return (hash client integer hash))
+        do (setf (ldb (byte 1 index) integer) bit)))
 
-(defmethod default-hash-function ((client standard-client) (name (eql 'equalp)))
-  'equalp-hash)
+(defmethod equalp-hash ((client standard-client) value &optional hash)
+  (equal-hash client value hash))
 
-(defmethod make-hash-table :around ((client standard-client) &rest initargs &key (test 'eql) (hash-function nil hash-function-p))
-  (declare (ignore hash-function))
-  (if hash-function-p
-      (call-next-method)
-      (apply #'call-next-method client :hash-function (default-hash-function client (normalize-test-function client test)) initargs)))
+(defmethod equalp-hash ((client standard-client) (value character) &optional hash)
+  (hash client (char-code (char-downcase value)) (hash client +character-seed+ hash)))
+
+(defmethod equalp-hash ((client standard-client) (value real) &optional hash)
+  (setf hash (hash client +float-seed+ hash))
+  (multiple-value-bind (significand exponent sign)
+      (quaviver:float-triple client 2 (coerce value 'long-float))
+    (cond ((symbolp exponent)
+           ; The payload of NaN is ignored in comparisons and infinity doesn't have a payload.
+           (hash client sign (eq-hash client exponent hash)))
+          ((and (zerop exponent) (zerop significand))
+           ; Ignore the sign for zero
+           (hash client 0 hash))
+          (t
+           (hash client sign (hash client exponent (hash client significand hash)))))))
+
+(defmethod equalp-hash ((client standard-client) (value complex) &optional hash)
+  (setf hash (equalp-hash client (realpart value) hash))
+  (unless (zerop (imagpart value))
+    (setf hash (equalp-hash client (imagpart value) hash)))
+  hash)
+

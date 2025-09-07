@@ -25,7 +25,7 @@
 (defmethod salmagundi:gethash (key (hash-table list-hash-table) &optional default)
   (declare (ignore default))
   (with-accessors ((contents contents)
-                   (test salmagundi:%hash-table-test))
+                   (test salmagundi:hash-table-test))
       hash-table
     (let ((entry (assoc key contents :test test)))
       (if (null entry)
@@ -49,7 +49,7 @@
 
 (defmethod salmagundi:remhash (key (hash-table list-hash-table))
   (with-accessors ((contents contents)
-                   (test salmagundi:%hash-table-test))
+                   (test salmagundi:hash-table-test))
       hash-table
     (let ((position (position key contents :key #'car :test test)))
       (if (null position)
@@ -64,7 +64,7 @@
   (declare (ignore default))
   (with-accessors ((contents contents)
                    (size size)
-                   (test salmagundi:%hash-table-test)
+                   (test salmagundi:hash-table-test)
                    (rehash-size salmagundi:hash-table-rehash-size)
                    (rehash-threshold salmagundi:hash-table-rehash-threshold)
                    (count salmagundi:hash-table-count))

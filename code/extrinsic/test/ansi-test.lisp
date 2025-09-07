@@ -19,11 +19,16 @@
                                 salmagundi-extrinsic:maphash
                                 salmagundi-extrinsic:with-hash-table-iterator
                                 salmagundi-extrinsic:clrhash)
+           :expected-failures (asdf:component-pathname
+                               (asdf:find-component
+                                system
+                                '("code" "expected-failures.sexp")))
            :tests '("CLRHASH"
                     "GETHASH"
                     "HASH-TABLE"
                     "MAKE-HASH-TABLE"
                     "MAPHASH"
                     "REMHASH"
+                    "SXHASH"
                     "WITH-HASH-TABLE-ITERATOR")
            args)))

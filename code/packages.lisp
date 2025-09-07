@@ -16,12 +16,12 @@
            #:make-hash-table
            #:maphash
            #:remhash)
-  (:export #:%hash-table-test
-           #:clrhash
+  (:export #:clrhash
            #:default-hash-function
            #:define-interface
            #:define-hash-table-test
            #:eq-hash
+           #:eql-hash
            #:equal-hash
            #:equalp-hash
            #:gethash

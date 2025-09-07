@@ -1,7 +1,8 @@
 (cl:in-package #:asdf-user)
 
 (defsystem "salmagundi"
-  :depends-on ("trinsic")
+  :depends-on ("quaviver"
+               "trinsic")
   :serial t
   :components ((:module "code"
                 :pathname "code/"
@@ -11,6 +12,15 @@
                              (:file "hash-table")
                              (:file "sxhash")
                              (:file "interface")))))
+
+(defsystem "salmagundi/fnv-hash"
+  :depends-on ("salmagundi")
+  :serial t
+  :components ((:module "code"
+                :pathname "code/fnv-hash/"
+                :serial t
+                :components ((:file "packages")
+                             (:file "hash")))))
 
 (defsystem "salmagundi/bucket"
   :depends-on ("salmagundi")

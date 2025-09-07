@@ -2,6 +2,16 @@
 
 (defclass standard-client () ())
 
+(defgeneric hash (client value &optional hash))
+
+(defgeneric eq-hash (client value &optional hash))
+
+(defgeneric eql-hash (client value &optional hash))
+
+(defgeneric equal-hash (client value &optional hash))
+
+(defgeneric equalp-hash (client value &optional hash))
+
 (defgeneric hash-table-count (hash-table)
   (:method (hash-table)
     (error 'type-error :datum hash-table :expected-type 'hash-table)))
@@ -27,18 +37,9 @@
 ;;; preferable for hash table implementations to call a function
 ;;; instead of coercing a function to a symbol and then coercing that
 ;;; back to a function.
-(defgeneric %hash-table-test (hash-table)
+(defgeneric hash-table-test (hash-table)
   (:method (hash-table)
     (error 'type-error :datum hash-table :expected-type 'hash-table)))
-
-(defun hash-table-test (hash-table)
-  (let ((designator (%hash-table-test hash-table)))
-    (if (symbolp designator)
-        designator
-        (let ((test-pair (rassoc designator *standard-tests*)))
-          (if (null test-pair)
-              designator
-              (car test-pair))))))
 
 (defgeneric gethash (key hash-table &optional default)
   (:method (key hash-table &optional default)

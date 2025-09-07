@@ -7,6 +7,11 @@
 (trinsic:make-define-interface (:intrinsic intrinsicp :client-class client-class :client-form client-var)
     ((define-hash-table-test-sym #:define-hash-table-test)
      (make-hash-table-sym cl:make-hash-table)
+     (sxhash-sym cl:sxhash)
+     (eq-hash-sym #:eq-hash)
+     (eql-hash-sym #:eql-hash)
+     (equal-hash-sym #:equal-hash)
+     (equalp-hash-sym #:equalp-hash)
      (with-hash-table-iterator-sym cl:with-hash-table-iterator))
    (let* ((intrinsic-pkg (if intrinsicp "COMMON-LISP" (package-name *package*))))
      `((shadowing-import '(clrhash
@@ -70,12 +75,39 @@ fixnum hash code. If test is neither standard nor defined by DEFINE-HASH-TABLE-T
 hash-function must be specified."
          (apply #'make-hash-table ,client-var rest))
 
+       (defun ,sxhash-sym (object)
+         (equal-hash ,client-var object))
+
        (defmacro ,with-hash-table-iterator-sym
            ((name hash-table) &body body)
          (let ((iterator-var (gensym "ITERATOR")))
            `(let ((,iterator-var (make-hash-table-iterator ,hash-table)))
               (macrolet ((,name () `(funcall ,',iterator-var)))
                 ,@body))))
+
+       (defun ,eq-hash-sym (object)
+         (eq-hash ,client-var object))
+
+       (defmethod default-hash-function ((client ,client-class) (name (eql 'eq)))
+         ',eq-hash-sym)
+
+       (defun ,eql-hash-sym (object)
+         (eql-hash ,client-var object))
+
+       (defmethod default-hash-function ((client ,client-class) (name (eql 'eql)))
+         ',eql-hash-sym)
+
+       (defun ,equal-hash-sym (object)
+         (equal-hash ,client-var object))
+
+       (defmethod default-hash-function ((client ,client-class) (name (eql 'equal)))
+         ',equal-hash-sym)
+
+       (defun ,equalp-hash-sym (object)
+         (equalp-hash ,client-var object))
+
+       (defmethod default-hash-function ((client ,client-class) (name (eql 'equalp)))
+         ',equalp-hash-sym)
 
        (defmacro ,define-hash-table-test-sym (name hash-function)
          (list 'defmethod 'default-hash-function

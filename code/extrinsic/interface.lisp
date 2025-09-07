@@ -3,7 +3,8 @@
 (defclass extrinsic-client (salmagundi:standard-client)
   ())
 
-(defclass extrinsic-client-impl (extrinsic-client salmagundi/bucket:bucket-client)
+(defclass extrinsic-client-impl
+    (extrinsic-client salmagundi/bucket:bucket-client salmagundi/fnv-hash:client)
   ())
 
 (defvar *client* (make-instance 'extrinsic-client-impl))
