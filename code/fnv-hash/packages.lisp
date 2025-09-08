@@ -2,4 +2,5 @@
 
 (defpackage #:salmagundi/fnv-hash
   (:use #:common-lisp)
-  (:export #:client))
+  (:export #:client-1
+           #:client-1a))

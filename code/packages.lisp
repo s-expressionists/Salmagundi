@@ -17,6 +17,7 @@
            #:maphash
            #:remhash)
   (:export #:clrhash
+           #:compute-hash
            #:default-hash-function
            #:define-interface
            #:define-hash-table-test

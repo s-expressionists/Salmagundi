@@ -10,7 +10,7 @@
                 :components ((:file "packages")
                              (:file "generic-functions")
                              (:file "hash-table")
-                             (:file "sxhash")
+                             (:file "hash")
                              (:file "interface")))))
 
 (defsystem "salmagundi/fnv-hash"
@@ -18,6 +18,15 @@
   :serial t
   :components ((:module "code"
                 :pathname "code/fnv-hash/"
+                :serial t
+                :components ((:file "packages")
+                             (:file "hash")))))
+
+(defsystem "salmagundi/sip-hash"
+  :depends-on ("salmagundi")
+  :serial t
+  :components ((:module "code"
+                :pathname "code/sip-hash/"
                 :serial t
                 :components ((:file "packages")
                              (:file "hash")))))

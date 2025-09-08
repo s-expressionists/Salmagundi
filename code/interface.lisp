@@ -76,7 +76,7 @@ hash-function must be specified."
          (apply #'make-hash-table ,client-var rest))
 
        (defun ,sxhash-sym (object)
-         (equal-hash ,client-var object))
+         (compute-hash ,client-var (equal-hash ,client-var object)))
 
        (defmacro ,with-hash-table-iterator-sym
            ((name hash-table) &body body)
@@ -86,25 +86,25 @@ hash-function must be specified."
                 ,@body))))
 
        (defun ,eq-hash-sym (object)
-         (eq-hash ,client-var object))
+         (compute-hash ,client-var (eq-hash ,client-var object)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'eq)))
          ',eq-hash-sym)
 
        (defun ,eql-hash-sym (object)
-         (eql-hash ,client-var object))
+         (compute-hash ,client-var (eql-hash ,client-var object)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'eql)))
          ',eql-hash-sym)
 
        (defun ,equal-hash-sym (object)
-         (equal-hash ,client-var object))
+         (compute-hash ,client-var (equal-hash ,client-var object)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'equal)))
          ',equal-hash-sym)
 
        (defun ,equalp-hash-sym (object)
-         (equalp-hash ,client-var object))
+         (compute-hash ,client-var (equalp-hash ,client-var object)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'equalp)))
          ',equalp-hash-sym)

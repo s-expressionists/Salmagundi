@@ -2,15 +2,17 @@
 
 (defclass standard-client () ())
 
-(defgeneric hash (client value &optional hash))
+(defgeneric compute-hash (client state))
 
-(defgeneric eq-hash (client value &optional hash))
+(defgeneric hash (client value &optional state))
 
-(defgeneric eql-hash (client value &optional hash))
+(defgeneric eq-hash (client value &optional state))
 
-(defgeneric equal-hash (client value &optional hash))
+(defgeneric eql-hash (client value &optional state))
 
-(defgeneric equalp-hash (client value &optional hash))
+(defgeneric equal-hash (client value &optional state))
+
+(defgeneric equalp-hash (client value &optional state))
 
 (defgeneric hash-table-count (hash-table)
   (:method (hash-table)

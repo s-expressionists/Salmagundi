@@ -13,6 +13,9 @@
                  :initarg :initial-hash
                  :type fixnum)))
 
+(defclass client-1 (client) ())
+
+(defclass client-1a (client) ())
 
 (defmethod initialize-instance :after ((instance client) &rest initargs &key)
   (declare (ignore initargs))
@@ -42,7 +45,27 @@
                    (error "Unable to determine prime for FNV hash with a width of ~a."
                           width)))))))
 
-(defmethod salmagundi:hash ((client client) value &optional hash)
+(defmethod salmagundi:compute-hash ((client client) state)
+  state)
+
+(defmethod salmagundi:hash ((client client-1) value &optional hash)
+  (unless hash
+    (setf hash (initial-hash client)))
+  (let ((prime (prime client))
+        (byte-spec (byte-spec client)))
+    (flet ((accumulate (byte)
+             (setf hash (ldb byte-spec (logxor (* hash prime) byte)))))
+      (accumulate (if (minusp value) 1 0))
+      (setf value (abs value))
+      (tagbody
+       next
+         (unless (zerop value)
+           (accumulate (ldb (byte 8 0) value))
+           (setf value (ash value -8))
+           (go next)))))
+  hash)
+
+(defmethod salmagundi:hash ((client client-1a) value &optional hash)
   (unless hash
     (setf hash (initial-hash client)))
   (let ((prime (prime client))
