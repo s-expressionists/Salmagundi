@@ -11,6 +11,10 @@
 
 (asdf:defsystem "salmagundi-extrinsic/test"
   :depends-on ("salmagundi-extrinsic"
+               "salmagundi/fnv-hash"
+               "salmagundi/sip-hash"
+               "salmagundi/bucket"
+               "salmagundi/linear-probing"
                "ansi-test-harness")
   :perform (asdf:test-op (op c)
              (uiop:symbol-call :salmagundi-extrinsic/ansi-test :test))

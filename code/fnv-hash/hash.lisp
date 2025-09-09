@@ -68,16 +68,9 @@
 (defmethod salmagundi:hash ((client client-1a) value &optional hash)
   (unless hash
     (setf hash (initial-hash client)))
-  (let ((prime (prime client))
-        (byte-spec (byte-spec client)))
-    (flet ((accumulate (byte)
-             (setf hash (ldb byte-spec (* (logxor hash byte) prime)))))
-      (accumulate (if (minusp value) 1 0))
-      (setf value (abs value))
-      (tagbody
-       next
-         (unless (zerop value)
-           (accumulate (ldb (byte 8 0) value))
-           (setf value (ash value -8))
-           (go next)))))
+  (loop with prime = (prime client)
+        with byte-spec = (byte-spec client)
+        for i below (integer-length value) by 8
+        for byte of-type (unsigned-byte 8) = (ldb (byte 8 i) value)
+        do (setf hash (ldb byte-spec (* (logxor hash byte) prime))))
   hash)

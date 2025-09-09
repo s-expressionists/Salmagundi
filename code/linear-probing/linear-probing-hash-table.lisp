@@ -76,7 +76,7 @@ Compare this to WITH-ENTRY in the bucket hash table."
            (data-vector data)
            (fixnum size))
   (multiple-value-bind (h1 h2)
-      (split-hash (salmagundi:hash hash-table key))
+      (split-hash (funcall (salmagundi:hash-table-hash-function hash-table) key))
     (let* ((groups      (floor size +metadata-entries-per-group+))
            (probe-position (cheap-mod h1 groups))
            (test        (salmagundi:hash-table-test hash-table)))
@@ -199,7 +199,7 @@ Compare this to WITH-ENTRY in the bucket hash table."
                      (salmagundi:hash-table-test hash-table)
                      t
                      key new-value
-                     (salmagundi:hash hash-table key))
+                     (funcall (salmagundi:hash-table-hash-function hash-table) key))
       (unless previously-key?
         (let ((count (incf (%hash-table-count hash-table))))
           (when previously-empty?
@@ -271,12 +271,16 @@ Compare this to WITH-ENTRY in the bucket hash table."
   hash-table)
 
 (defmethod salmagundi:make-hash-table-iterator ((hash-table linear-probing-hash-table))
-  (let ((position 0)
+  (let ((position -1)
         (data (hash-table-data hash-table))
         (size (salmagundi:hash-table-size hash-table)))
     (lambda ()
-      (if (= position size)
-          (values nil)
-          (multiple-value-prog1
-              (values t (key data position) (value data position))
-            (incf position))))))
+      (block nil
+        (tagbody
+         next
+           (incf position)
+           (when (= position size)
+             (return (values nil)))
+           (when (eq (key data position) +empty+)
+             (go next))
+           (return (values t (key data position) (value data position))))))))

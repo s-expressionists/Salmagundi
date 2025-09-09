@@ -4,4 +4,6 @@
   (:use #:common-lisp))
 
 (defpackage #:salmagundi-extrinsic/ansi-test
-  (:use #:common-lisp))
+  (:use #:common-lisp)
+  (:export #:test
+           #:test-all))

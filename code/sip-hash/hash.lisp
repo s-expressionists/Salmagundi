@@ -53,7 +53,7 @@
                    v2 (rotl v2 32)))))
 
 (defmethod salmagundi:hash ((client client) value &optional state)
-  (declare (type fixnum value)
+  (declare (type integer value)
            (type (or null sip-state) state))
   (symbol-macrolet ((v0 (aref state 0))
                     (v1 (aref state 1))
@@ -70,10 +70,12 @@
                                                       (logxor k0 #x6c7967656e657261)
                                                       (logxor k1 #x7465646279746573)
                                                       0))))
-    (setf v3 (logxor v3 value))
-    (sip-round state (compression-count client))
-    (setf v0 (logxor v0 value))
-    (incf b)
+    (loop for i below (integer-length value) by 64
+          for word of-type (unsigned-byte 64) = (ldb (byte 64 i) value)
+          do (setf v3 (logxor v3 word))
+             (sip-round state (compression-count client))
+             (setf v0 (logxor v0 word))
+             (incf b))
     state))
 
 (defmethod salmagundi:compute-hash ((client client) state)
