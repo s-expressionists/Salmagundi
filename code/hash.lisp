@@ -46,7 +46,7 @@
 (defmethod equal-hash :around ((client standard-client) value &optional state)
   (let ((*depth* (1- *depth*)))
     (if (zerop *depth*)
-        hash
+        state
         (call-next-method))))
 
 (defmethod equal-hash ((client standard-client) value &optional state)

@@ -13,25 +13,27 @@
    (%hash-function :reader hash-table-hash-function
                    :initarg :hash-function)))
 
-(defmethod initialize-instance :after ((hash-table hash-table) &key test)
-  (assert (>= (hash-table-rehash-size hash-table) 1)
-          ()
-          "The rehash-size must be greater than or equal to 1.")
-  ;; Ensure the hash table test is a function.
-  #+(or)(etypecase test
-    (function
-     (setf (%%hash-table-test hash-table) test))
-    (symbol
-     (setf (%%hash-table-test hash-table)
-           (fdefinition (hash-table-test hash-table))))))
-
 (defmethod hash-table-p ((object hash-table))
   t)
 
-(defmethod make-hash-table :around ((client standard-client) &rest initargs &key (test 'eql) (hash-function nil hash-function-p))
-  (declare (ignore hash-function))
+(defmethod make-hash-table :around
+    ((client standard-client) &rest initargs
+     &key (test 'eql) (size nil size-p) (rehash-size nil rehash-size-p)
+          (rehash-threshold nil rehash-threshold-p) (hash-function nil hash-function-p))
+  (check-type test (or symbol function))
   (setf test (normalize-test-function client test)
         (getf initargs :test) test)
-  (if hash-function-p
-      (apply #'call-next-method client initargs)
-      (apply #'call-next-method client :hash-function (default-hash-function client test) initargs)))
+  (when size-p
+    (check-type size (integer 0 *))
+    (setf (getf initargs :size) size))
+  (when rehash-size-p
+    (check-type rehash-size (or (integer 1 *) (float (1.0) *)))
+    (setf (getf initargs :rehash-size) rehash-size))
+  (when rehash-threshold-p
+    (check-type rehash-threshold (real 0 1))
+    (setf (getf initargs :rehash-threshold) rehash-threshold))
+  (unless hash-function-p
+    (setf hash-function (default-hash-function client test)))
+  (check-type hash-function (or symbol function))
+  (setf (getf initargs :hash-function) hash-function)
+  (apply #'call-next-method client initargs))
