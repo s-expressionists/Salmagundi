@@ -12,6 +12,11 @@
      (eql-hash-sym #:eql-hash)
      (equal-hash-sym #:equal-hash)
      (equalp-hash-sym #:equalp-hash)
+     (eq-hash-var #:*eq-hash* :variable t)
+     (eql-hash-var #:*eql-hash* :variable t)
+     (equal-hash-var #:*equal-hash* :variable t)
+     (equalp-hash-var #:*equalp-hash* :variable t)
+     (similarp-hash-var #:*similarp-hash* :variable t)
      (with-hash-table-iterator-sym cl:with-hash-table-iterator))
    (let* ((intrinsic-pkg (if intrinsicp "COMMON-LISP" (package-name *package*))))
      `((shadowing-import '(clrhash
@@ -39,6 +44,16 @@
                  maphash
                  remhash)
                ,intrinsic-pkg)
+
+       (defvar ,eq-hash-var (make-instance 'eq-hash))
+
+       (defvar ,eql-hash-var (make-instance 'eql-hash))
+
+       (defvar ,equal-hash-var (make-instance 'equal-hash))
+
+       (defvar ,equalp-hash-var (make-instance 'equalp-hash))
+
+       (defvar ,similarp-hash-var (make-instance 'similarp-hash))
 
        (defun ,make-hash-table-sym
            (&rest rest
@@ -76,7 +91,7 @@ hash-function must be specified."
          (apply #'make-hash-table ,client-var rest))
 
        (defun ,sxhash-sym (object)
-         (compute-hash ,client-var (equal-hash ,client-var object)))
+         (compute-hash ,client-var (equivalence-hash ,client-var ,similarp-hash-var object)))
 
        (defmacro ,with-hash-table-iterator-sym
            ((name hash-table) &body body)
@@ -86,25 +101,25 @@ hash-function must be specified."
                 ,@body))))
 
        (defun ,eq-hash-sym (object)
-         (compute-hash ,client-var (eq-hash ,client-var object)))
+         (compute-hash ,client-var (equivalence-hash ,client-var ,eq-hash-var object)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'eq)))
          ',eq-hash-sym)
 
        (defun ,eql-hash-sym (object)
-         (compute-hash ,client-var (eql-hash ,client-var object)))
+         (compute-hash ,client-var (equivalence-hash ,client-var ,eql-hash-var object)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'eql)))
          ',eql-hash-sym)
 
        (defun ,equal-hash-sym (object)
-         (compute-hash ,client-var (equal-hash ,client-var object)))
+         (compute-hash ,client-var (equivalence-hash ,client-var ,equal-hash-var object)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'equal)))
          ',equal-hash-sym)
 
        (defun ,equalp-hash-sym (object)
-         (compute-hash ,client-var (equalp-hash ,client-var object)))
+         (compute-hash ,client-var (equivalence-hash ,client-var ,equalp-hash-var object)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'equalp)))
          ',equalp-hash-sym)

@@ -6,13 +6,7 @@
 
 (defgeneric hash (client value &optional state))
 
-(defgeneric eq-hash (client value &optional state))
-
-(defgeneric eql-hash (client value &optional state))
-
-(defgeneric equal-hash (client value &optional state))
-
-(defgeneric equalp-hash (client value &optional state))
+(defgeneric equivalence-hash (client equivalence value &optional state))
 
 (defgeneric hash-table-count (hash-table)
   (:method (hash-table)

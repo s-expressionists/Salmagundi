@@ -21,10 +21,7 @@
            #:default-hash-function
            #:define-interface
            #:define-hash-table-test
-           #:eq-hash
-           #:eql-hash
-           #:equal-hash
-           #:equalp-hash
+           #:equivalence-hash
            #:gethash
            #:hash
            #:hash-table

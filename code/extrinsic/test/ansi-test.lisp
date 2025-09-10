@@ -38,6 +38,7 @@
                                 salmagundi-extrinsic:remhash
                                 salmagundi-extrinsic:maphash
                                 salmagundi-extrinsic:with-hash-table-iterator
+                                salmagundi-extrinsic:sxhash
                                 salmagundi-extrinsic:clrhash)
            :expected-failures (asdf:component-pathname
                                (asdf:find-component
