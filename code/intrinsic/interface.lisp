@@ -4,7 +4,7 @@
   ())
 
 (defclass intrinsic-client-impl
-    (intrinsic-client salmagundi/bucket:bucket-client salmagundi/fnv-hash:client-1a)
+    (intrinsic-client salmagundi/bucket:bucket-client salmagundi/fnv-hash:client)
   ())
 
 (defvar *client* (make-instance 'intrinsic-client-impl))

@@ -8,23 +8,20 @@
           :initarg :width
           :initform (integer-length most-positive-fixnum)
           :type fixnum)
-   (byte-spec :accessor byte-spec)
+   (variation :reader variation
+              :initarg :variation
+              :initform :1a
+              :type (member :1 :1a))
    (initial-hash :accessor initial-hash
                  :initarg :initial-hash
                  :type fixnum)))
-
-(defclass client-1 (client) ())
-
-(defclass client-1a (client) ())
 
 (defmethod initialize-instance :after ((instance client) &rest initargs &key)
   (declare (ignore initargs))
   (with-accessors ((prime prime)
                    (width width)
-                   (byte-spec byte-spec)
                    (initial-hash initial-hash))
       instance
-    (setf byte-spec (byte width 0))
     (unless (slot-boundp instance 'initial-hash)
       (setf initial-hash (random (expt 2 width))))
     (unless (slot-boundp instance 'prime)
@@ -45,32 +42,19 @@
                    (error "Unable to determine prime for FNV hash with a width of ~a."
                           width)))))))
 
+(defmethod salmagundi:make-hash ((client client))
+  (make-array 1 :element-type '(unsigned-byte 64) :initial-element (initial-hash client)))
+
 (defmethod salmagundi:compute-hash ((client client) state)
-  state)
+  (ldb (byte (width client) 0) (aref state 0)))
 
-(defmethod salmagundi:hash ((client client-1) value &optional hash)
-  (unless hash
-    (setf hash (initial-hash client)))
-  (let ((prime (prime client))
-        (byte-spec (byte-spec client)))
-    (flet ((accumulate (byte)
-             (setf hash (ldb byte-spec (logxor (* hash prime) byte)))))
-      (accumulate (if (minusp value) 1 0))
-      (setf value (abs value))
-      (tagbody
-       next
-         (unless (zerop value)
-           (accumulate (ldb (byte 8 0) value))
-           (setf value (ash value -8))
-           (go next)))))
-  hash)
-
-(defmethod salmagundi:hash ((client client-1a) value &optional hash)
-  (unless hash
-    (setf hash (initial-hash client)))
+(defmethod salmagundi:hash ((client client) state value)
   (loop with prime = (prime client)
-        with byte-spec = (byte-spec client)
+        with variation = (variation client)
         for i below (integer-length value) by 8
         for byte of-type (unsigned-byte 8) = (ldb (byte 8 i) value)
-        do (setf hash (ldb byte-spec (* (logxor hash byte) prime))))
-  hash)
+        do (setf (aref state 0)
+                 (ldb (byte 64 0)
+                      (if (eq variation :1)
+                          (logxor (* (aref state 0) prime) byte)
+                          (* (logxor (aref state 0) byte) prime))))))

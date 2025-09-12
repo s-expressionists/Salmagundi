@@ -2,7 +2,7 @@
 
 (defclass bucket/fnv
     (salmagundi-extrinsic:extrinsic-client salmagundi/bucket:bucket-client
-     salmagundi/fnv-hash:client-1a)
+     salmagundi/fnv-hash:client)
   ())
 
 (defclass bucket/sip
@@ -12,7 +12,7 @@
 
 (defclass linear-probing/fnv
     (salmagundi-extrinsic:extrinsic-client salmagundi/linear-probing:linear-probing-client
-     salmagundi/fnv-hash:client-1a)
+     salmagundi/fnv-hash:client)
   ())
 
 (defclass linear-probing/sip

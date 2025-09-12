@@ -2,11 +2,13 @@
 
 (defclass standard-client () ())
 
+(defgeneric make-hash (client))
+
 (defgeneric compute-hash (client state))
 
-(defgeneric hash (client value &optional state))
+(defgeneric hash (client state value))
 
-(defgeneric equivalence-hash (client equivalence value &optional state))
+(defgeneric equivalence-hash (client state equivalence value))
 
 (defgeneric hash-table-count (hash-table)
   (:method (hash-table)

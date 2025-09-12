@@ -33,6 +33,7 @@
            #:hash-table-rehash-threshold
            #:hash-table-size
            #:hash-table-test
+           #:make-hash
            #:make-hash-table
            #:make-hash-table-iterator
            #:maphash

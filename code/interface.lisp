@@ -91,7 +91,10 @@ hash-function must be specified."
          (apply #'make-hash-table ,client-var rest))
 
        (defun ,sxhash-sym (object)
-         (compute-hash ,client-var (equivalence-hash ,client-var ,similarp-hash-var object)))
+         (let ((state (make-hash ,client-var)))
+           (declare (dynamic-extent state))
+           (equivalence-hash ,client-var state ,similarp-hash-var object)
+           (compute-hash ,client-var state)))
 
        (defmacro ,with-hash-table-iterator-sym
            ((name hash-table) &body body)
@@ -101,25 +104,37 @@ hash-function must be specified."
                 ,@body))))
 
        (defun ,eq-hash-sym (object)
-         (compute-hash ,client-var (equivalence-hash ,client-var ,eq-hash-var object)))
+         (let ((state (make-hash ,client-var)))
+           (declare (dynamic-extent state))
+           (equivalence-hash ,client-var state ,eq-hash-var object)
+           (compute-hash ,client-var state)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'eq)))
          ',eq-hash-sym)
 
        (defun ,eql-hash-sym (object)
-         (compute-hash ,client-var (equivalence-hash ,client-var ,eql-hash-var object)))
+         (let ((state (make-hash ,client-var)))
+           (declare (dynamic-extent state))
+           (equivalence-hash ,client-var state ,eql-hash-var object)
+           (compute-hash ,client-var state)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'eql)))
          ',eql-hash-sym)
 
        (defun ,equal-hash-sym (object)
-         (compute-hash ,client-var (equivalence-hash ,client-var ,equal-hash-var object)))
+         (let ((state (make-hash ,client-var)))
+           (declare (dynamic-extent state))
+           (equivalence-hash ,client-var state ,equal-hash-var object)
+           (compute-hash ,client-var state)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'equal)))
          ',equal-hash-sym)
 
        (defun ,equalp-hash-sym (object)
-         (compute-hash ,client-var (equivalence-hash ,client-var ,equalp-hash-var object)))
+         (let ((state (make-hash ,client-var)))
+           (declare (dynamic-extent state))
+           (equivalence-hash ,client-var state ,equalp-hash-var object)
+           (compute-hash ,client-var state)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'equalp)))
          ',equalp-hash-sym)

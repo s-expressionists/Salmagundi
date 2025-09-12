@@ -52,24 +52,25 @@
                    v1 (logxor v1 v2)
                    v2 (rotl v2 32)))))
 
-(defmethod salmagundi:hash ((client client) value &optional state)
+(defmethod salmagundi:make-hash ((client client))
+  (symbol-macrolet ((k0 (aref (key client) 0))
+                    (k1 (aref (key client) 1)))
+    (make-array 5
+                :element-type '(unsigned-byte 64)
+                :initial-contents (list (logxor k0 #x736f6d6570736575)
+                                        (logxor k1 #x646f72616e646f6d)
+                                        (logxor k0 #x6c7967656e657261)
+                                        (logxor k1 #x7465646279746573)
+                                        0))))
+
+(defmethod salmagundi:hash ((client client) state value)
   (declare (type integer value)
            (type (or null sip-state) state))
   (symbol-macrolet ((v0 (aref state 0))
                     (v1 (aref state 1))
                     (v2 (aref state 2))
                     (v3 (aref state 3))
-                    (b (aref state 4))
-                    (k0 (aref (key client) 0))
-                    (k1 (aref (key client) 1)))
-    (unless state
-      (setf state (make-array 5
-                              :element-type '(unsigned-byte 64)
-                              :initial-contents (list (logxor k0 #x736f6d6570736575)
-                                                      (logxor k1 #x646f72616e646f6d)
-                                                      (logxor k0 #x6c7967656e657261)
-                                                      (logxor k1 #x7465646279746573)
-                                                      0))))
+                    (b (aref state 4)))
     (loop for i below (integer-length value) by 64
           for word of-type (unsigned-byte 64) = (ldb (byte 64 i) value)
           do (setf v3 (logxor v3 word))
