@@ -68,6 +68,14 @@
     (declare (ignore object))
     nil))
 
+(defgeneric rehash-p (hash-table)
+  (:method (hash-table)
+    (> (hash-table-count hash-table)
+       (* (hash-table-size hash-table)
+          (hash-table-rehash-threshold hash-table)))))
+
+(defgeneric rehash (hash-table))
+
 (defgeneric make-hash-table (client &key))
 
 (defgeneric default-hash-function (client name))

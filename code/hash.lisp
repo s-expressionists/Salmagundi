@@ -115,7 +115,7 @@
 
 (defmethod equivalence-hash
     ((client standard-client) state (equivalence eql-hash) (value float))
-  (hash-float client state equivalence value))
+  (hash-float client state value))
 
 (defmethod equivalence-hash
     ((client standard-client) state (equivalence eql-hash) (value ratio))
@@ -172,7 +172,7 @@
 
 (defmethod equivalence-hash
     ((client standard-client) state (equivalence equalp-hash) (value real))
-  (hash-float client state equivalence (coerce value 'long-float) t))
+  (hash-float client state (coerce value 'long-float) t))
 
 (defmethod equivalence-hash
     ((client standard-client) state (equivalence equalp-hash) (value complex))
@@ -197,7 +197,7 @@
     ((client standard-client) state (equivalence equalp-hash) (table hash-table))
   (hash client state +hash-table-seed+)
   (hash client state (hash-table-count table))
-  (eqivalence-hash client state equivalence (hash-table-test table))
+  (equivalence-hash client state equivalence (hash-table-test table))
   (let ((hash-function (hash-table-hash-function table))
         (limit *hash-limit*))
     (maphash (lambda (key value)
@@ -212,7 +212,7 @@
 (defmethod equivalence-hash
     ((client standard-client) state (equivalence equalp-hash) (object structure-object))
   (loop with class = (class-of object)
-        for name in (class-slot-names client class)
+        for name in (slot-names class)
         repeat *hash-limit*
         initially (hash client state +structure-seed+)
                     (equivalence-hash client state equivalence (class-name class))
@@ -224,7 +224,7 @@
 
 (defmethod equivalence-hash
     ((client standard-client) state (equivalence similarp-hash) (value float))
-  (hash-float client state equivalence value t))
+  (hash-float client state value t))
 
 (defmethod equivalence-hash
     ((client standard-client) state (equivalence similarp-hash) (value symbol))

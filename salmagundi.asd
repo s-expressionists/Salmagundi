@@ -40,6 +40,15 @@
                 :components ((:file "packages")
                              (:file "bucket-hash-table")))))
 
+(defsystem "salmagundi/chained-hash-table"
+  :depends-on ("salmagundi")
+  :serial t
+  :components ((:module "code"
+                :pathname "code/chained-hash-table/"
+                :serial t
+                :components ((:file "packages")
+                             (:file "hash-table")))))
+
 (defsystem "salmagundi/linear-probing"
   :depends-on ("salmagundi")
   :serial t

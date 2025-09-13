@@ -189,7 +189,7 @@ Compare this to WITH-ENTRY in the bucket hash table."
                         (= +empty-metadata+ old-metadata)))))
           (setf probe-position (cheap-mod (1+ probe-position) groups)))))))
 
-(defmethod (setf salmagundi:gethash) (new-value key hash-table &optional default)
+(defmethod (setf salmagundi:gethash) (new-value key (hash-table linear-probing-hash-table) &optional default)
   (declare (ignore default))
   (let ((size (%hash-table-size hash-table)))
     (multiple-value-bind (previously-key? previously-empty?)

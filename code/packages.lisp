@@ -37,5 +37,7 @@
            #:make-hash-table
            #:make-hash-table-iterator
            #:maphash
+           #:rehash
+           #:rehash-p
            #:remhash
            #:standard-client))

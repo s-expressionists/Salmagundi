@@ -10,6 +10,16 @@
      salmagundi/sip-hash:client)
   ())
 
+(defclass chained/fnv
+    (salmagundi-extrinsic:extrinsic-client salmagundi/chained-hash-table:client
+     salmagundi/fnv-hash:client)
+  ())
+
+(defclass chained/sip
+    (salmagundi-extrinsic:extrinsic-client salmagundi/chained-hash-table:client
+     salmagundi/sip-hash:client)
+  ())
+
 (defclass linear-probing/fnv
     (salmagundi-extrinsic:extrinsic-client salmagundi/linear-probing:linear-probing-client
      salmagundi/fnv-hash:client)
@@ -56,7 +66,7 @@
 
 (defun test-all (&key exit)
   (loop with successp = t
-        for client in '(bucket/fnv bucket/sip linear-probing/fnv linear-probing/sip)
+        for client in '(bucket/fnv bucket/sip chained/fnv chained/sip linear-probing/fnv linear-probing/sip)
         for salmagundi-extrinsic:*client* = (make-instance client)
         finally (if exit
                     (uiop:quit (if successp 0 1))
