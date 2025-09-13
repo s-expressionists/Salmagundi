@@ -1,8 +1,7 @@
 (asdf:defsystem "salmagundi-extrinsic"
   :depends-on ("salmagundi"
                "salmagundi/fnv-hash"
-               "salmagundi/bucket"
-               "salmagundi/list")
+               "salmagundi/chained-hash-table")
   :components ((:module code
                 :pathname "code/extrinsic/"
                 :serial t
