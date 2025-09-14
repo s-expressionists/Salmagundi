@@ -13,7 +13,8 @@
                     :initform 0)
    (count :accessor %hash-table-count
           :reader salmagundi:hash-table-count
-          :initform 0)))
+          :initform 0))
+  (:default-initargs :rehash-threshold .65))
 
 (defmethod salmagundi:make-hash-table ((client linear-probing-client) &rest initargs
                                        &key test size rehash-size rehash-threshold)

@@ -9,20 +9,20 @@
 
 (defclass chained-hash-table (salmagundi:hash-table)
   ((data :accessor hash-table-data)
-   (count :accessor %chained-hash-table-count
+   (count :accessor %hash-table-count
           :reader salmagundi:hash-table-count
-          :initform 0)))
+          :initform 0))
+  (:default-initargs :rehash-threshold 1.5))
 
 (defmethod initialize-instance :after ((hash-table chained-hash-table) &key (size 16))
   (setf (hash-table-data hash-table)
-        (make-array size
-                    :initial-element nil :element-type '(or null entry))))
+        (make-array size :initial-element nil :element-type 'list)))
 
 (defmethod salmagundi:make-hash-table ((client client) &rest initargs
-                                       &key test size rehash-size rehash-threshold)
+                                       &key test size rehash-size rehash-threshold
+                                            hash-function)
   (declare (ignore test size rehash-size rehash-threshold))
   (apply #'make-instance 'chained-hash-table initargs))
-
 
 (defmethod salmagundi:hash-table-size ((hash-table chained-hash-table))
   (length (hash-table-data hash-table)))
@@ -46,18 +46,29 @@
           (values t (entry-key entry) (entry-value entry)))))))
 
 (defun grow-and-rehash (hash-table)
-  (with-accessors ((rehash-size salmagundi:hash-table-rehash-size)
-                   (size salmagundi:hash-table-size))
+  (with-accessors ((data hash-table-data))
       hash-table
-    (loop with new-size = (if (integerp rehash-size)
-                              (+ size rehash-size)
-                              (round (* size rehash-size)))
-          with new-data = (make-array new-size
-                                      :initial-element nil :element-type '(or null entry))
-          for slot across (hash-table-data hash-table)
-          finally (setf (hash-table-data hash-table) new-data)
+    (loop with rehash-size = (salmagundi:hash-table-rehash-size hash-table)
+          with size = (salmagundi:hash-table-size hash-table)
+          with new-size = (+ size
+                             (if (integerp rehash-size)
+                                 rehash-size
+                                 (round (* size rehash-size))))
+          with new-data = (make-array new-size :initial-element nil :element-type 'list)
+          for slot across data
+          finally (setf data new-data)
           do (loop for entry in slot
                    do (push entry (aref new-data (mod (entry-hash entry) new-size)))))))
+
+(defmethod salmagundi:rehash
+    ((hash-table chained-hash-table) &optional (size (salmagundi:hash-table-size hash-table)))
+  (with-accessors ((data hash-table-data))
+      hash-table
+    (loop with new-data = (make-array size :initial-element nil :element-type 'list)
+          for slot across data
+          finally (setf data new-data)
+          do (loop for entry in slot
+                   do (push entry (aref new-data (mod (entry-hash entry) size)))))))
 
 (defun maybe-grow-and-rehash (hash-table)
   (when (> (salmagundi:hash-table-count hash-table)
@@ -87,15 +98,15 @@
           (t
            (push (make-entry :hash hash :key key :value value)
                  (aref (hash-table-data hash-table) index))
-           (incf (%chained-hash-table-count hash-table))
+           (incf (%hash-table-count hash-table))
            (maybe-grow-and-rehash hash-table))))
   value)
 
 (defmethod salmagundi:gethash (key (hash-table chained-hash-table) &optional default)
   (let ((entry (find-entry hash-table key)))
-    (if (null entry)
-        (values default nil)
-        (values (entry-value entry) t))))
+    (if entry
+        (values (entry-value entry) t)
+        (values default nil))))
 
 (defmethod salmagundi:remhash (key (hash-table chained-hash-table))
   (multiple-value-bind (entry hash index previous-head)
@@ -105,12 +116,12 @@
       (if previous-head
           (setf (cdr previous-head) (cddr previous-head))
           (pop (aref (hash-table-data hash-table) index)))
-      (decf (%chained-hash-table-count hash-table))
+      (decf (%hash-table-count hash-table))
       t)))
 
 (defmethod salmagundi:clrhash ((hash-table chained-hash-table))
   (fill (hash-table-data hash-table) nil)
-  (setf (%chained-hash-table-count hash-table) 0)
+  (setf (%hash-table-count hash-table) 0)
   hash-table)
 
 (defmethod salmagundi:maphash (function (hash-table chained-hash-table))

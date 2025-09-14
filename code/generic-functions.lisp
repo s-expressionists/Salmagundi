@@ -74,7 +74,7 @@
        (* (hash-table-size hash-table)
           (hash-table-rehash-threshold hash-table)))))
 
-(defgeneric rehash (hash-table))
+(defgeneric rehash (hash-table &optional size))
 
 (defgeneric make-hash-table (client &key))
 

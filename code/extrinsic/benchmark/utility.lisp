@@ -30,7 +30,46 @@
      salmagundi/sip-hash:client)
   ())
 
-(defvar classes '(bucket/fnv chained/fnv linear-probing/fnv))
+(defmethod salmagundi:hash-table-count ((hash-table hash-table))
+  (hash-table-count hash-table))
+
+(defmethod salmagundi:hash-table-rehash-size ((hash-table hash-table))
+  (hash-table-rehash-size hash-table))
+
+(defmethod salmagundi:hash-table-rehash-threshold ((hash-table hash-table))
+  (hash-table-rehash-threshold hash-table))
+
+(defmethod salmagundi:hash-table-size ((hash-table hash-table))
+  (hash-table-size hash-table))
+
+(defmethod salmagundi:hash-table-test ((hash-table hash-table))
+  (hash-table-test hash-table))
+
+(defmethod salmagundi:gethash (key (hash-table hash-table) &optional default)
+  (gethash key hash-table default))
+
+(defmethod (setf salmagundi:gethash) (new-value key (hash-table hash-table) &optional default)
+  (declare (ignore default))
+  (setf (gethash key hash-table) new-value))
+
+(defmethod salmagundi:remhash (key (hash-table hash-table))
+  (remhash key hash-table))
+
+(defmethod salmagundi:maphash (function (hash-table hash-table))
+  (maphash function hash-table))
+
+(defmethod salmagundi:clrhash ((hash-table hash-table))
+  (clrhash hash-table))
+
+(defmethod salmagundi:hash-table-p ((hash-table hash-table))
+  t)
+
+(defclass native () ())
+
+(defmethod salmagundi:make-hash-table ((client native) &rest initargs &key)
+  (apply #'make-hash-table initargs))
+
+(defvar classes '(native bucket/fnv chained/fnv linear-probing/fnv))
 
 (defvar *benchmarks* (make-hash-table))
 
