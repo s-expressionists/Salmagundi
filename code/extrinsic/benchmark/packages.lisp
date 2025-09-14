@@ -2,4 +2,4 @@
 
 (defpackage #:salmagundi-extrinsic/benchmark
   (:use #:common-lisp)
-  (:export #:bench))
+  (:export #:run))

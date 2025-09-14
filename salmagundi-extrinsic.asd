@@ -26,9 +26,7 @@
                              (:static-file "expected-failures.sexp")))))
 
 (asdf:defsystem "salmagundi-extrinsic/benchmark"
-  :depends-on ("the-cost-of-nothing"
-               "cl-spark"
-               "cl-ascii-table"
+  :depends-on ("cl-spark"
                "salmagundi-extrinsic"
                "salmagundi/fnv-hash"
                "salmagundi/sip-hash"
@@ -39,4 +37,5 @@
                 :pathname "code/extrinsic/benchmark/"
                 :serial t
                 :components ((:file "packages")
+                             (:file "utility")
                              (:file "bench")))))
