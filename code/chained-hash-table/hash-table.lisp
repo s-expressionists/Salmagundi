@@ -61,7 +61,7 @@
                    do (push entry (aref new-data (mod (entry-hash entry) new-size)))))))
 
 (defmethod salmagundi:rehash
-    ((hash-table chained-hash-table) &optional (size (salmagundi:hash-table-size hash-table)))
+    ((hash-table chained-hash-table) &key (size (salmagundi:hash-table-size hash-table)))
   (with-accessors ((data hash-table-data))
       hash-table
     (loop with new-data = (make-array size :initial-element nil :element-type 'list)
