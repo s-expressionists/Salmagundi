@@ -16,7 +16,8 @@
            #:make-hash-table
            #:maphash
            #:remhash)
-  (:export #:clrhash
+  (:export #:ceiling-pow2
+           #:clrhash
            #:compute-hash
            #:default-hash-function
            #:define-interface
@@ -37,6 +38,7 @@
            #:make-hash-table
            #:make-hash-table-iterator
            #:maphash
+           #:mod-pow2
            #:rehash
            #:rehash-p
            #:remhash

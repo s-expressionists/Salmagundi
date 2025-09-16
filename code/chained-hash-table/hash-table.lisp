@@ -16,7 +16,8 @@
 
 (defmethod initialize-instance :after ((hash-table chained-hash-table) &key (size 16))
   (setf (hash-table-data hash-table)
-        (make-array size :initial-element nil :element-type 'list)))
+        (make-array (salmagundi:ceiling-pow2 size)
+                    :initial-element nil :element-type 'list)))
 
 (defmethod salmagundi:make-hash-table ((client client) &rest initargs
                                        &key test size rehash-size rehash-threshold
@@ -45,41 +46,37 @@
         (let ((entry (pop contents)))
           (values t (entry-key entry) (entry-value entry)))))))
 
-(defun grow-and-rehash (hash-table)
-  (with-accessors ((data hash-table-data))
-      hash-table
-    (loop with rehash-size = (salmagundi:hash-table-rehash-size hash-table)
-          with size = (salmagundi:hash-table-size hash-table)
-          with new-size = (+ size
-                             (if (integerp rehash-size)
-                                 rehash-size
-                                 (round (* size rehash-size))))
-          with new-data = (make-array new-size :initial-element nil :element-type 'list)
-          for slot across data
-          finally (setf data new-data)
-          do (loop for entry in slot
-                   do (push entry (aref new-data (mod (entry-hash entry) new-size)))))))
+(defun compute-rehash-size (hash-table)
+  (let ((rehash-size (salmagundi:hash-table-rehash-size hash-table))
+        (size (salmagundi:hash-table-size hash-table)))
+    (+ size
+       (if (integerp rehash-size)
+           rehash-size
+           (ceiling (* size rehash-size))))))
 
 (defmethod salmagundi:rehash
-    ((hash-table chained-hash-table) &key (size (salmagundi:hash-table-size hash-table)))
+    ((hash-table chained-hash-table) &key (size (compute-rehash-size hash-table)))
+  (setf size (salmagundi:ceiling-pow2 size))
   (with-accessors ((data hash-table-data))
       hash-table
     (loop with new-data = (make-array size :initial-element nil :element-type 'list)
           for slot across data
           finally (setf data new-data)
           do (loop for entry in slot
-                   do (push entry (aref new-data (mod (entry-hash entry) size)))))))
+                   do (push entry (aref new-data (salmagundi:mod-pow2 (entry-hash entry) size)))))))
 
 (defun maybe-grow-and-rehash (hash-table)
   (when (> (salmagundi:hash-table-count hash-table)
            (* (salmagundi:hash-table-size hash-table)
               (salmagundi:hash-table-rehash-threshold hash-table)))
-    (grow-and-rehash hash-table)))
+    (salmagundi:rehash hash-table)))
 
 (defun find-entry (hash-table key)
-  (loop with test = (salmagundi:hash-table-test hash-table)
-        with hash = (funcall (salmagundi:hash-table-hash-function hash-table) key)
-        with index = (mod hash (salmagundi:hash-table-size hash-table))
+  (loop with test of-type (or symbol function) = (salmagundi:hash-table-test hash-table)
+        with hash = (funcall (the (or symbol function)
+                                  (salmagundi:hash-table-hash-function hash-table))
+                             key)
+        with index = (salmagundi:mod-pow2 hash (salmagundi:hash-table-size hash-table))
         for previous-head = nil then head
         for head on (aref (hash-table-data hash-table) index)
         for entry = (car head)

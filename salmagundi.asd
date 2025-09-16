@@ -8,6 +8,7 @@
                 :pathname "code/"
                 :serial t
                 :components ((:file "packages")
+                             (:file "utility")
                              (:file "generic-functions")
                              (:file "hash-table")
                              (:file "hash")
