@@ -18,12 +18,18 @@
   (make-array 1 :element-type 'fixnum :initial-element (initial-hash client)))
 
 (defmethod salmagundi:compute-hash ((client client) state)
+  (declare (type (vector fixnum 1) state))
   (aref state 0))
 
 (defmethod salmagundi:hash ((client client) state (value integer))
   (declare (type (vector fixnum 1) state))
-  (loop for i below (integer-length value) by 8
-        do (setf (aref state 0)
-                 (ldb (byte +width+ 0) (* (logxor (aref state 0)
-                                                  (ldb (byte 8 i) value))
-                                          +prime+)))))
+  (prog ((i 0)
+         (l (integer-length value))
+         (s (aref state 0)))
+     (declare (type fixnum i l s))
+   next
+     (when (< i l)
+       (setf s (ldb (byte +width+ 0) (* (logxor s (ldb (byte 8 i) value)) +prime+)))
+       (incf i 8)
+       (go next))
+     (setf (aref state 0) s)))
