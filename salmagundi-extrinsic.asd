@@ -30,6 +30,7 @@
                "salmagundi-extrinsic"
                "salmagundi/fnv-hash"
                "salmagundi/sip-hash"
+               "salmagundi/block-hash-table"
                "salmagundi/bucket"
                "salmagundi/chained-hash-table"
                "salmagundi/linear-probing")

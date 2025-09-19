@@ -10,6 +10,16 @@
      salmagundi/sip-hash:client)
   ())
 
+(defclass block/fnv
+    (salmagundi-extrinsic:extrinsic-client salmagundi/block-hash-table:client
+     salmagundi/fnv-hash:client)
+  ())
+
+(defclass block/sip
+    (salmagundi-extrinsic:extrinsic-client salmagundi/block-hash-table:client
+     salmagundi/sip-hash:client)
+  ())
+
 (defclass chained/fnv
     (salmagundi-extrinsic:extrinsic-client salmagundi/chained-hash-table:client
      salmagundi/fnv-hash:client)
@@ -69,7 +79,7 @@
 (defmethod salmagundi:make-hash-table ((client native) &rest initargs &key)
   (apply #'make-hash-table initargs))
 
-(defvar classes '(native bucket/fnv chained/fnv linear-probing/fnv))
+(defvar classes '(native block/fnv bucket/fnv chained/fnv linear-probing/fnv))
 
 (defvar *benchmarks* (make-hash-table))
 
