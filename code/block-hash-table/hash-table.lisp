@@ -1,5 +1,9 @@
 (cl:in-package #:salmagundi/block-hash-table)
 
+(defvar *iterator-data* nil)
+
+(defvar *iterator-index* nil)
+
 (defclass client (salmagundi:standard-client) ())
 
 (defstruct entry
@@ -18,8 +22,11 @@
    (block-size :accessor block-size
                :initarg :block-size
                :initform 8)
-   (bytespec :accessor bytespec))
-  (:default-initargs :rehash-threshold 1.0
+   (bytespec :accessor bytespec)
+   (collision-fraction :accessor collision-fraction
+                       :initarg :collision-fraction
+                       :initform 0.5))
+  (:default-initargs :rehash-threshold 0.8
                      :rehash-size 2.0))
 
 (defmethod initialize-instance :after ((hash-table block-hash-table) &key (size 16))
@@ -28,10 +35,12 @@
                    (data hash-table-data))
       hash-table
     (setf block-size (salmagundi:ceiling-pow2 block-size)
-          size (* block-size (ceiling size block-size))
-          bytespec (byte (- (integer-length size) 2) 0)
-          data (make-array size :adjustable t :fill-pointer (ash size -1) :initial-element nil
-                                :element-type 'element))))
+          size (salmagundi:ceiling-pow2 size))
+    (let ((table-size (salmagundi:ceiling-pow2 (ceiling (- size
+                                                  (* size (collision-fraction hash-table)))))))
+      (setf bytespec (byte (- (integer-length table-size) 1) 0)
+            data (make-array size :fill-pointer table-size :initial-element nil
+                                  :element-type 'element)))))
 
 (defmethod salmagundi:make-hash-table ((client client) &rest initargs
                                        &key test size rehash-size rehash-threshold
@@ -43,39 +52,40 @@
   (array-total-size (hash-table-data hash-table)))
 
 (defmethod salmagundi:make-hash-table-iterator ((hash-table block-hash-table))
-  (let* ((data (hash-table-data hash-table))
-         (index (length data))
+  (let* ((*iterator-data* (hash-table-data hash-table))
+         (*iterator-index* (length *iterator-data*))
          (element nil))
-    (declare (type (vector element) data)
-             (type fixnum index)
+    (declare (type (vector element) *iterator-data*)
+             (type fixnum *iterator-index*)
              (type element element))
     (lambda ()
       (block hash-table-iterator
         (tagbody
          next-element
-           (when (minusp (decf index))
+           (when (minusp (decf *iterator-index*))
              (return-from hash-table-iterator nil))
-           (when (entry-p (setf element (aref data index)))
+           (when (entry-p (setf element (aref *iterator-data* *iterator-index*)))
              (return-from hash-table-iterator
                (values t (entry-key element) (entry-value element))))
            (go next-element))))))
 
 (defun compute-rehash-size (hash-table &optional (size (salmagundi:hash-table-size hash-table)))
   (let ((rehash-size (salmagundi:hash-table-rehash-size hash-table)))
-    (+ size
-       (if (integerp rehash-size)
-           rehash-size
-           (ceiling (* size rehash-size))))))
+    (salmagundi:ceiling-pow2 (+ size
+                                (if (integerp rehash-size)
+                                    rehash-size
+                                    (ceiling (* size rehash-size)))))))
 
 (defmethod salmagundi:rehash
     ((hash-table block-hash-table) &key (size (compute-rehash-size hash-table)))
-  (setf size (salmagundi:ceiling-pow2 size))
   (prog* ((data (hash-table-data hash-table))
           (index (length data))
           (new-index 0)
           (remaining 0)
-          (bytespec (byte (- (integer-length size) 2) 0))
-          (new-data (make-array size :adjustable t :fill-pointer (ash size -1)
+          (table-size (salmagundi:ceiling-pow2 (ceiling (- size
+                                                (* size (collision-fraction hash-table))))))
+          (bytespec (byte (- (integer-length table-size) 1) 0))
+          (new-data (make-array size :fill-pointer table-size
                                      :initial-element nil :element-type 'element))
           (block-size (block-size hash-table))
           (element nil)
@@ -111,10 +121,17 @@
        (incf new-index)
        (go next-new-element))
    extend-block
+     (unless (<= (+ (length new-data) block-size) (array-total-size new-data))
+       (setf index (length data)
+             size (compute-rehash-size hash-table size)
+             table-size (salmagundi:ceiling-pow2 (ceiling (- size
+                                                    (* size (collision-fraction hash-table)))))
+             bytespec (byte (- (integer-length table-size) 1) 0)
+             new-data (make-array size :fill-pointer table-size
+                                       :initial-element nil :element-type 'element))
+       (go next-element))
      (setf (aref new-data new-index) (fill-pointer new-data)
            new-index (fill-pointer new-data))
-     (unless (<= (+ (length new-data) block-size) (array-total-size new-data))
-       (adjust-array new-data (compute-rehash-size hash-table (array-total-size new-data)) :initial-element nil))
      (incf (fill-pointer new-data) block-size)
      (setf (aref new-data new-index) new-element)
      (incf new-index)
@@ -127,14 +144,12 @@
               (salmagundi:hash-table-rehash-threshold hash-table)))
     (salmagundi:rehash hash-table)))
 
-(defun find-entry (hash-table key &optional makep)
+(defun find-entry (hash-table key &key ((:make makep) nil))
   (prog* ((test (salmagundi:hash-table-test hash-table))
-          (hash (funcall (the (or symbol function)
-                          (salmagundi:hash-table-hash-function hash-table))
-                 key))
-          (index (ldb (bytespec hash-table) hash))
+          (hash 0)
+          (index 0)
           (data (hash-table-data hash-table))
-          (element (aref data index))
+          (element nil)
           (block-size (block-size hash-table))
           (nil-index nil)
           (remaining 0))
@@ -142,6 +157,19 @@
               (type fixnum hash index remaining)
               (type element element)
               (type (or null fixnum) nil-index))
+     (when (and (eq data *iterator-data*)
+                *iterator-index*
+                (entry-p (setf element (aref *iterator-data* *iterator-index*)))
+                ;(= hash (entry-hash element))
+                (funcall test key (entry-key element)))
+       (return (values element *iterator-index*)))
+     (setf hash (funcall (the (or symbol function)
+                              (salmagundi:hash-table-hash-function hash-table))
+                         key))
+   begin
+     (setf nil-index nil
+           index (ldb (bytespec hash-table) hash)
+           element (the element (aref data index)))
      (when (integerp element)
        (setf index element)
        (go next-block))
@@ -160,7 +188,7 @@
    next-block
      (setf remaining block-size)
    next-element
-     (setf element (aref data index))
+     (setf element (the element (aref data index)))
      (when (integerp element)
        (setf index element)
        (go next-block))
@@ -180,10 +208,12 @@
        (return (values (setf (aref data nil-index) (make-entry :hash hash :key key))
                        nil-index)))
    extend-block
+     (unless (<= (+ (fill-pointer data) block-size) (array-total-size data))
+       (salmagundi:rehash hash-table)
+       (setf data (hash-table-data hash-table))
+       (go begin))
      (setf (aref data index) (fill-pointer data)
            index (fill-pointer data))
-     (unless (<= (+ (length data) block-size) (array-total-size data))
-       (adjust-array data (compute-rehash-size hash-table (array-total-size data)) :initial-element nil))
      (incf (fill-pointer data) block-size)
      (setf (aref data index) element)
      (incf index)
@@ -194,7 +224,7 @@
 (defmethod (setf salmagundi:gethash)
     (value key (hash-table block-hash-table) &optional default)
   (declare (ignore default))
-  (setf (entry-value (find-entry hash-table key t)) value)
+  (setf (entry-value (find-entry hash-table key :make t)) value)
   (maybe-grow-and-rehash hash-table)
   value)
 
@@ -224,15 +254,15 @@
     hash-table))
 
 (defmethod salmagundi:maphash (function (hash-table block-hash-table))
-  (prog* ((data (hash-table-data hash-table))
-          (index (length data))
+  (prog* ((*iterator-data* (hash-table-data hash-table))
+          (*iterator-index* (length *iterator-data*))
           (element nil))
-  (declare (type fixnum index)
+  (declare (type fixnum *iterator-index*)
            (type element element))
    next-element
-     (when (minusp (decf index))
+     (when (minusp (decf *iterator-index*))
        (return nil))
-     (setf element (aref data index))
+     (setf element (aref *iterator-data* *iterator-index*))
      (when (entry-p element)
        (funcall function (entry-key element) (entry-value element)))
      (go next-element)))
