@@ -15,21 +15,64 @@
                  :type fixnum)))
 
 (defmethod salmagundi:make-hash ((client client))
-  (make-array 1 :element-type 'fixnum :initial-element (initial-hash client)))
+  (let ((hash (initial-hash client)))
+    (declare (type fixnum hash))
+    (values (lambda (value &aux (i 0) (l (integer-length value)))
+              (declare (type integer value)
+                       (type fixnum i l))
+              (tagbody
+               next
+                 (when (< i l)
+                   (setf hash (ldb (byte +width+ 0)
+                                   (* (logxor hash (ldb (byte 8 i) value))
+                                      +prime+)))
+                   (incf i 8)
+                   (go next))))
+            (lambda ()
+              hash))))
 
-(defmethod salmagundi:compute-hash ((client client) state)
-  (declare (type (vector fixnum 1) state))
-  (aref state 0))
+(defmethod salmagundi:hash ((client client) function object)
+  (let ((hash (initial-hash client)))
+    (declare (type fixnum hash))
+    (funcall function
+             (lambda (value &aux (i 0) (l (integer-length value)))
+               (declare (type fixnum i l))
+               (tagbody
+                next
+                  (when (< i l)
+                    (setf hash (ldb (byte +width+ 0)
+                                    (* (logxor hash (ldb (byte 8 i) value))
+                                       +prime+)))
+                    (incf i 8)
+                    (go next))))
+            object)
+    hash))
 
-(defmethod salmagundi:hash ((client client) state (value integer))
-  (declare (type (vector fixnum 1) state))
-  (prog ((i 0)
-         (l (integer-length value))
-         (s (aref state 0)))
-     (declare (type fixnum i l s))
-   next
-     (when (< i l)
-       (setf s (ldb (byte +width+ 0) (* (logxor s (ldb (byte 8 i) value)) +prime+)))
-       (incf i 8)
-       (go next))
-     (setf (aref state 0) s)))
+#|(defmacro with-hash (func object-var)
+  `(let ((hash 0))
+     (declare (type fixnum hash))
+     (,func (lambda (value &aux (i 0) (l (integer-length value)))
+              (declare (type fixnum i l))
+              (tagbody
+               next
+                 (when (< i l)
+                   (setf hash (ldb (byte +width+ 0)
+                                   (* (logxor hash (ldb (byte 8 i) value))
+                                      +prime+)))
+                   (incf i 8)
+                   (go next))))
+            ,object-var)
+     hash))
+
+(defun eq-hash (object)
+  (with-hash salmagundi:eq-hash object))
+
+(defun eql-hash (object)
+  (with-hash salmagundi:eql-hash object))
+
+(defmethod salmagundi:default-hash-function ((client client) (name (eql 'eq)))
+  'eq-hash)
+
+(defmethod salmagundi:default-hash-function ((client client) (name (eql 'eql)))
+  'eql-hash)
+|#

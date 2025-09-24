@@ -45,7 +45,7 @@
 
 (defvar *hash-limit* 10)
 
-(defun hash-string (client state value &optional case-insensitive-p)
+#+(or)(defun hash-string (client state value &optional case-insensitive-p)
   (loop for ch across value
         repeat *hash-limit*
         initially (hash client state +string-seed+)
@@ -55,7 +55,7 @@
                                 (char-downcase ch)
                                 ch)))))
 
-(defun hash-float (client state value &optional similarp)
+#+(or)(defun hash-float (client state value &optional similarp)
   (hash client state
         (etypecase value
           #+quaviver/short-float
@@ -82,14 +82,216 @@
            (hash client state exponent)
            (hash client state sign)))))
 
-(defmethod equivalence-hash :around ((client standard-client) state equivalence value)
+#+(or)(defmethod equivalence-hash :around ((client standard-client) state equivalence value)
   (let ((*hash-limit* (1- *hash-limit*)))
     (when (plusp *hash-limit*)
       (call-next-method))))
 
-(defclass eq-hash () ())
+#+(or)(defclass eq-hash () ())
 
-(defmethod equivalence-hash
+(declaim (inline hash-float hash-bit-vector hash-string hash-pathname hash-array
+                 hash-hash-table hash-structure)
+         (ftype (function (function t) null)
+                eq-hash eq-lhash equal-hash equalp-hash sxhash)
+         (ftype (function (function float &optional t) null)
+                hash-float)
+         (ftype (function (function bit-vector) null)
+                hash-bit-vector)
+         (ftype (function (function string &optional t) null)
+                hash-string)
+         (ftype (function (function pathname) null)
+                hash-pathname))
+
+(defun hash-string (accumulate object &optional case-insensitive-p)
+  (loop for ch across object
+        repeat *hash-limit*
+        initially (funcall accumulate +string-seed+)
+                  (funcall accumulate (length object))
+        do (funcall accumulate
+                    (char-code (if case-insensitive-p
+                                   (char-downcase ch)
+                                   ch)))))
+
+(defun hash-float (accumulate object &optional similarp)
+  (funcall accumulate
+           (etypecase object
+             #+quaviver/short-float
+             (short-float +short-float-seed+)
+             (single-float +single-float-seed+)
+             (double-float +double-float-seed+)
+             #+quaviver/long-float
+             (long-float +long-float-seed+)))
+  (multiple-value-bind (significand exponent sign)
+      (quaviver:float-triple nil 2 object)
+    (cond ((symbolp exponent)
+           ; The payload of NaN is ignored in equivalences and infinity doesn't have a payload.
+           (funcall accumulate
+                    (ecase exponent
+                      (:infinity 1)
+                      (:quiet-nan 2)
+                      (:signaling-nan 3)))
+           (funcall accumulate sign))
+          ((and similarp (zerop exponent) (zerop significand))
+           ; Ignore the sign for zero
+           (funcall accumulate 0))
+          (t
+           (funcall accumulate significand)
+           (funcall accumulate exponent)
+           (funcall accumulate sign)))))
+
+(defun hash-bit-vector (accumulate object)
+  (loop with integer = 0
+        for bit across object
+        for index below (integer-length most-positive-fixnum)
+        repeat *hash-limit*
+          initially (funcall accumulate +bit-vector-seed+)
+                    (funcall accumulate (length object))
+        finally (funcall accumulate integer)
+        do (setf (ldb (byte 1 index) integer) bit)))
+
+(defun hash-pathname (accumulate object)
+  (funcall accumulate +pathname-seed+)
+  (equal-hash accumulate (pathname-host object))
+  (equal-hash accumulate (pathname-device object))
+  (equal-hash accumulate (pathname-directory object))
+  (equal-hash accumulate (pathname-name object))
+  (equal-hash accumulate (pathname-type object))
+  (equal-hash accumulate (pathname-version object)))
+
+(defun hash-array (accumulate object)
+  (funcall accumulate +array-seed+)
+  (funcall accumulate (array-rank object))
+  (loop for dim in (array-dimensions object)
+        do (funcall accumulate dim))
+  (loop for i below (array-total-size object)
+        repeat *hash-limit*
+        do (equalp-hash accumulate (row-major-aref object i))))
+
+(defun hash-hash-table (accumulate object)
+  (funcall accumulate +hash-table-seed+)
+  (funcall accumulate (hash-table-count table))
+  (equalp-hash accumulate (hash-table-test table))
+  (let ((hash-function (hash-table-hash-function table))
+        (limit *hash-limit*))
+    (maphash (lambda (key value)
+               (cond ((plusp limit)
+                      (funcall accumulate (funcall hash-function key))
+                      (equalp-hash accumulate value)
+                      (decf limit))
+                     (t
+                      (return-from hash-hash-table nil))))
+             table)))
+
+(defun hash-structure (accumulate object)
+  (loop with class = (class-of object)
+        for name in (slot-names class)
+        repeat *hash-limit*
+        initially (funcall accumulate +structure-seed+)
+                    (equalp-hash accumulate (class-name class))
+        do (equalp-hash accumulate name)
+        when (slot-boundp object name)
+          do (equalp-hash accumulate (slot-value object name))))
+
+(defun eq-hash (accumulate object)
+  (declare (type (function (integer) null) accumulate))
+  (funcall accumulate +object-seed+)
+  (funcall accumulate
+           #-(or abcl allegro ccl cmucl ecl sbcl) 0
+           #+abcl (system:identity-hash-code object)
+           #+allegro (excl:lispval-to-address object)
+           #+ccl (ccl:%address-of object)
+           #+cmucl (lisp::get-lisp-obj-address object)
+           #+ecl (si:pointer object)
+           #+sbcl (sb-kernel:get-lisp-obj-address object)))
+
+(defun eql-hash (accumulate object)
+  (typecase object
+    (character
+     (funcall accumulate +character-seed+)
+     (funcall accumulate (char-code object)))
+    (integer
+     (funcall accumulate +integer-seed+)
+     (funcall accumulate object))
+    (float
+     (hash-float accumulate object))
+    (ratio
+     (funcall accumulate +ratio-seed+)
+     (funcall accumulate (denominator object))
+     (funcall accumulate (numerator object)))
+    (complex
+     (funcall accumulate +complex-seed+)
+     (eql-hash accumulate (realpart object))
+     (eql-hash accumulate (imagpart object)))
+    (t
+     (eq-hash accumulate object))))
+
+(defun equal-hash (accumulate object)
+  (typecase object
+    (cons
+     (when (plusp *hash-limit*)
+       (let ((*hash-limit* (1- *hash-limit*)))
+         (funcall accumulate +cons-seed+)
+         (equal-hash accumulate (car object))
+         (equal-hash accumulate (cdr object)))))
+    (string
+     (funcall accumulate +string-seed+)
+     (hash-string accumulate object))
+    (bit-vector
+     (hash-bit-vector accumulate object))
+    (pathname
+     (hash-pathname accumulate object))
+    (t
+     (eql-hash accumulate object))))
+
+(defun equalp-hash (accumulate object)
+  (typecase object
+    (character
+     (funcall accumulate +character-seed+)
+     (funcall accumulate (char-code (char-downcase object))))
+    (real
+     (hash-float accumulate (coerce object 'long-float) t))
+    (complex
+     (cond ((zerop (imagpart object))
+            (hash-float accumulate (coerce (realpart object) 'long-float) t))
+           (t
+            (funcall accumulate +complex-seed+)
+            (hash-float accumulate (coerce (realpart object) 'long-float) t)
+            (hash-float accumulate (coerce (imagpart object) 'long-float) t))))
+    (cons
+     (when (plusp *hash-limit*)
+       (let ((*hash-limit* (1- *hash-limit*)))
+         (funcall accumulate +cons-seed+)
+         (equalp-hash accumulate (car object))
+         (equalp-hash accumulate (cdr object)))))
+    (pathname
+     (hash-pathname accumulate object))
+    (structure-object
+     (hash-structure accumulate object))
+    (array
+     (hash-array accumulate object))
+    (hash-table
+     (hash-hash-table accumulate object))
+    (t
+     (eql-hash accumulate object))))
+
+(defun sxhash (accumulate object)
+  (typecase object
+    (float
+     (hash-float accumulate object t))
+    (complex
+     (funcall accumulate +complex-seed+)
+     (sxhash accumulate (realpart object))
+     (sxhash accumulate (imagpart object)))
+    (symbol
+     (funcall accumulate +symbol-seed+)
+     (hash-string accumulate (symbol-name object)))
+    (package
+     (funcall accumulate +package-seed+)
+     (hash-string accumulate (package-name object)))
+    (t
+     (equal-hash accumulate object))))
+
+#|(defmethod equivalence-hash
     ((client standard-client) state (equivalence eq-hash) value)
   (hash client state +object-seed+)
   (hash client state
@@ -235,3 +437,4 @@
     ((client standard-client) state (equivalence similarp-hash) (value package))
   (hash client state +package-seed+)
   (hash-string client state (package-name value)))
+|#

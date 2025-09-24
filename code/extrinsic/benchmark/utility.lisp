@@ -1,5 +1,29 @@
 (in-package #:salmagundi-extrinsic/benchmark)
 
+(defgeneric label (client)
+  (:method-combination append)
+  (:method append (client)
+    (declare (ignore client))
+    nil))
+
+(defmethod label append ((client salmagundi/bucket:bucket-client))
+  (list "Bucket"))
+
+(defmethod label append ((client salmagundi/block-hash-table:client))
+  (list "Block"))
+
+(defmethod label append ((client salmagundi/chained-hash-table:client))
+  (list "Chained"))
+
+(defmethod label append ((client salmagundi/linear-probing:linear-probing-client))
+  (list "Linear Probing"))
+
+(defmethod label append ((client salmagundi/fnv-hash:client))
+  (list "FNV hash"))
+
+(defmethod label append ((client salmagundi/sip-hash:client))
+  (list "SipHash"))
+
 (defclass bucket/fnv
     (salmagundi-extrinsic:extrinsic-client salmagundi/bucket:bucket-client
      salmagundi/fnv-hash:client)
@@ -79,19 +103,24 @@
 (defmethod salmagundi:make-hash-table ((client native) &rest initargs &key)
   (apply #'make-hash-table initargs))
 
+(defmethod label append ((client native))
+  (list (uiop:implementation-identifier)))
+
 (defvar classes '(native block/fnv bucket/fnv chained/fnv linear-probing/fnv))
 
 (defvar *benchmarks* (make-hash-table))
 
 (defmacro define-benchmark (name &body body)
-  `(setf (gethash ',name *benchmarks*)
-         (lambda () ,@body)))
+  `(progn
+     (defun ,name () ,@body)
+     (setf (gethash ',name *benchmarks*) (function ,name))))
 
 (defvar *minimum-bench-time* 10)
 
 (defvar *overhead-time* 0)
 
 (defun bench (thunk)
+  (trivial-garbage:gc :full t)
   (loop with start = (get-internal-real-time)
         with end = (+ start (* *minimum-bench-time* internal-time-units-per-second))
         for count from 1
@@ -126,5 +155,7 @@
                       (loop for class in classes
                             for salmagundi-extrinsic:*client* in clients
                             do (format t "  ~a...~%" class)
-                            collect (cons class (bench thunk))))
+                            collect (cons (format nil "~{~a~^/~}"
+                                                  (label salmagundi-extrinsic:*client*))
+                                          (bench thunk))))
         into results))

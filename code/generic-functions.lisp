@@ -4,11 +4,7 @@
 
 (defgeneric make-hash (client))
 
-(defgeneric compute-hash (client state))
-
-(defgeneric hash (client state value))
-
-(defgeneric equivalence-hash (client state equivalence value))
+(defgeneric hash (client function value))
 
 (defgeneric hash-table-count (hash-table)
   (:method (hash-table)

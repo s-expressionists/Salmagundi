@@ -12,11 +12,11 @@
      (eql-hash-sym #:eql-hash)
      (equal-hash-sym #:equal-hash)
      (equalp-hash-sym #:equalp-hash)
-     (eq-hash-var #:*eq-hash* :variable t)
-     (eql-hash-var #:*eql-hash* :variable t)
-     (equal-hash-var #:*equal-hash* :variable t)
-     (equalp-hash-var #:*equalp-hash* :variable t)
-     (similarp-hash-var #:*similarp-hash* :variable t)
+     #+(or)(eq-hash-var #:*eq-hash* :variable t)
+     #+(or)(eql-hash-var #:*eql-hash* :variable t)
+     #+(or)(equal-hash-var #:*equal-hash* :variable t)
+     #+(or)(equalp-hash-var #:*equalp-hash* :variable t)
+     #+(or)(similarp-hash-var #:*similarp-hash* :variable t)
      (with-hash-table-iterator-sym cl:with-hash-table-iterator))
    (let* ((intrinsic-pkg (if intrinsicp "COMMON-LISP" (package-name *package*))))
      `((shadowing-import '(clrhash
@@ -44,16 +44,6 @@
                  maphash
                  remhash)
                ,intrinsic-pkg)
-
-       (defvar ,eq-hash-var (make-instance 'eq-hash))
-
-       (defvar ,eql-hash-var (make-instance 'eql-hash))
-
-       (defvar ,equal-hash-var (make-instance 'equal-hash))
-
-       (defvar ,equalp-hash-var (make-instance 'equalp-hash))
-
-       (defvar ,similarp-hash-var (make-instance 'similarp-hash))
 
        (defun ,make-hash-table-sym
            (&rest rest
@@ -91,10 +81,12 @@ hash-function must be specified."
          (apply #'make-hash-table ,client-var rest))
 
        (defun ,sxhash-sym (object)
-         (let ((state (make-hash ,client-var)))
-           (declare (dynamic-extent state))
-           (equivalence-hash ,client-var state ,similarp-hash-var object)
-           (compute-hash ,client-var state)))
+         (multiple-value-bind (accumulate finalize)
+             (make-hash ,client-var)
+           (declare (type (function (integer) null) accumulate)
+                    (type (function () fixnum) finalize))
+           (sxhash accumulate object)
+           (funcall finalize)))
 
        (defmacro ,with-hash-table-iterator-sym
            ((name hash-table) &body body)
@@ -104,37 +96,45 @@ hash-function must be specified."
                 ,@body))))
 
        (defun ,eq-hash-sym (object)
-         (let ((state (make-hash ,client-var)))
-           (declare (dynamic-extent state))
-           (equivalence-hash ,client-var state ,eq-hash-var object)
-           (compute-hash ,client-var state)))
+         (multiple-value-bind (accumulate finalize)
+             (make-hash ,client-var)
+           (declare (type (function (integer) null) accumulate)
+                    (type (function () fixnum) finalize))
+           (eq-hash accumulate object)
+           (funcall finalize)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'eq)))
          ',eq-hash-sym)
 
        (defun ,eql-hash-sym (object)
-         (let ((state (make-hash ,client-var)))
-           (declare (dynamic-extent state))
-           (equivalence-hash ,client-var state ,eql-hash-var object)
-           (compute-hash ,client-var state)))
+         (multiple-value-bind (accumulate finalize)
+             (make-hash ,client-var)
+           (declare (type (function (integer) null) accumulate)
+                    (type (function () fixnum) finalize))
+           (eql-hash accumulate object)
+           (funcall finalize)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'eql)))
          ',eql-hash-sym)
 
        (defun ,equal-hash-sym (object)
-         (let ((state (make-hash ,client-var)))
-           (declare (dynamic-extent state))
-           (equivalence-hash ,client-var state ,equal-hash-var object)
-           (compute-hash ,client-var state)))
+         (multiple-value-bind (accumulate finalize)
+             (make-hash ,client-var)
+           (declare (type (function (integer) null) accumulate)
+                    (type (function () fixnum) finalize))
+           (equal-hash accumulate object)
+           (funcall finalize)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'equal)))
          ',equal-hash-sym)
 
        (defun ,equalp-hash-sym (object)
-         (let ((state (make-hash ,client-var)))
-           (declare (dynamic-extent state))
-           (equivalence-hash ,client-var state ,equalp-hash-var object)
-           (compute-hash ,client-var state)))
+         (multiple-value-bind (accumulate finalize)
+             (make-hash ,client-var)
+           (declare (type (function (integer) null) accumulate)
+                    (type (function () fixnum) finalize))
+           (equalp-hash accumulate object)
+           (funcall finalize)))
 
        (defmethod default-hash-function ((client ,client-class) (name (eql 'equalp)))
          ',equalp-hash-sym)

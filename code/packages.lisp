@@ -15,14 +15,18 @@
            #:hash-table-test
            #:make-hash-table
            #:maphash
-           #:remhash)
+           #:remhash
+           #:sxhash)
   (:export #:ceiling-pow2
            #:clrhash
            #:compute-hash
            #:default-hash-function
            #:define-interface
            #:define-hash-table-test
-           #:equivalence-hash
+           #:eq-hash
+           #:eql-hash
+           #:equal-hash
+           #:equalp-hash
            #:gethash
            #:hash
            #:hash-table
