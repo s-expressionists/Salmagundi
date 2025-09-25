@@ -41,11 +41,11 @@
                 :components ((:file "packages")
                              (:file "bucket-hash-table")))))
 
-(defsystem "salmagundi/block-hash-table"
+(defsystem "salmagundi/jump-hash-table"
   :depends-on ("salmagundi")
   :serial t
   :components ((:module "code"
-                :pathname "code/block-hash-table/"
+                :pathname "code/jump-hash-table/"
                 :serial t
                 :components ((:file "packages")
                              (:file "hash-table")))))

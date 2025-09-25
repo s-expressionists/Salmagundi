@@ -9,8 +9,8 @@
 (defmethod label append ((client salmagundi/bucket:bucket-client))
   (list "Bucket"))
 
-(defmethod label append ((client salmagundi/block-hash-table:client))
-  (list "Block"))
+(defmethod label append ((client salmagundi/jump-hash-table:client))
+  (list "Jump"))
 
 (defmethod label append ((client salmagundi/chained-hash-table:client))
   (list "Chained"))
@@ -34,13 +34,13 @@
      salmagundi/sip-hash:client)
   ())
 
-(defclass block/fnv
-    (salmagundi-extrinsic:extrinsic-client salmagundi/block-hash-table:client
+(defclass jump/fnv
+    (salmagundi-extrinsic:extrinsic-client salmagundi/jump-hash-table:client
      salmagundi/fnv-hash:client)
   ())
 
-(defclass block/sip
-    (salmagundi-extrinsic:extrinsic-client salmagundi/block-hash-table:client
+(defclass jump/sip
+    (salmagundi-extrinsic:extrinsic-client salmagundi/jump-hash-table:client
      salmagundi/sip-hash:client)
   ())
 
@@ -106,7 +106,7 @@
 (defmethod label append ((client native))
   (list (uiop:implementation-identifier)))
 
-(defvar classes '(native block/fnv bucket/fnv chained/fnv linear-probing/fnv))
+(defvar classes '(native jump/fnv bucket/fnv chained/fnv linear-probing/fnv))
 
 (defvar *benchmarks* (make-hash-table))
 

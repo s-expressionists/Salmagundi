@@ -1,12 +1,12 @@
 (in-package #:salmagundi-extrinsic/ansi-test)
 
-(defclass block/fnv
-    (salmagundi-extrinsic:extrinsic-client salmagundi/block-hash-table:client
+(defclass jump/fnv
+    (salmagundi-extrinsic:extrinsic-client salmagundi/jump-hash-table:client
      salmagundi/fnv-hash:client)
   ())
 
-(defclass block/sip
-    (salmagundi-extrinsic:extrinsic-client salmagundi/block-hash-table:client
+(defclass jump/sip
+    (salmagundi-extrinsic:extrinsic-client salmagundi/jump-hash-table:client
      salmagundi/sip-hash:client)
   ())
 
@@ -76,7 +76,7 @@
 
 (defun test-all (&key exit)
   (loop with successp = t
-        for client in '(block/fnv block/sip bucket/fnv bucket/sip chained/fnv chained/sip
+        for client in '(jump/fnv jump/sip bucket/fnv bucket/sip chained/fnv chained/sip
                         linear-probing/fnv linear-probing/sip)
         for salmagundi-extrinsic:*client* = (make-instance client)
         finally (if exit
